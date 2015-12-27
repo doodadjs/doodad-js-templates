@@ -1,0 +1,7 @@
+FILES
+=================
+ddt.xsd           : Copyright Claude Petit 2015, under the Apache V2 license. DDT (Doodad Template) root schema.
+ddi.xsd           : Copyright Claude Petit 2015, under the Apache V2 license. DDI (Doodad Include Template) root schema.
+ddt_elements.xsd  : Copyright Claude Petit 2015, under the Apache V2 license. DDT and DDI common elements schema.
+html5_ddt.dtd     : Copyright Claude Petit 2015, under the Apache V2 license. HTML5+DDT DTD.
+html5_ddt.xsd     : Copyright Claude Petit 2015, under the Apache V2 license. HTML5+DDT schema.

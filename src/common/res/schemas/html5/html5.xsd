@@ -1,0 +1,937 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:h="http://www.doodad-js.local/schemas/html5" version="1.0"
+  targetNamespace="http://www.doodad-js.local/schemas/html5">
+
+  <!--
+
+	 dOOdad - Class library for Javascript (BETA) with some extras (ALPHA)
+	 File: html5.xsd - HTML5 schema file
+	 Project home: https://sourceforge.net/projects/doodad-js/
+	 Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
+	 Author: Claude Petit, Quebec city
+	 Contact: doodadjs [at] gmail.com
+	 Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !
+	 License: Apache V2
+	
+		Copyright 2015 Claude Petit
+	
+		Licensed under the Apache License, Version 2.0 (the "License");
+		you may not use this file except in compliance with the License.
+		You may obtain a copy of the License at
+	
+			http://www.apache.org/licenses/LICENSE-2.0
+	
+		Unless required by applicable law or agreed to in writing, software
+		distributed under the License is distributed on an "AS IS" BASIS,
+		WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+		See the License for the specific language governing permissions and
+		limitations under the License.
+-->
+  <xs:element name="a">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="abbr">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="address">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="area">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="article">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="aside">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="audio">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="b">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="base">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="bdi">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="bdo">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="blockquote">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="body">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="br">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="button">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="canvas">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="caption">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="cite">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="code">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="col">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="colgroup">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="datalist">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="dd">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="del">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="details">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="dfn">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="dialog">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="div">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="dl">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="d">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="em">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="embed">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="fieldset">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="figcaption">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="figure">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="footer">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="form">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="h1">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="h2">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="h3">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="h4">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="h5">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="h6">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="head">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="header">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="hr">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="i">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="iframe">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="img">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="input">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ins">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="kbd">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="keygen">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="label">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="legend">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="li">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="link">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="main">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="map">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="mark">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="menu">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="menuitem">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="meta">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="meter">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="nav">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="noscript">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="object">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ol">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="optgroup">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="option">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="output">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="p">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="param">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="pre">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="progress">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="q">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="rb">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="rp">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="rt">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="rtc">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ruby">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="s">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="samp">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="script">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="section">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="select">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="small">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="source">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="span">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="strong">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="style">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="sub">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="summary">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="sup">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="table">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tbody">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="td">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="template">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="textarea">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tfoot">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="th">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="thead">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="time">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="title">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tr">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="track">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="u">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ul">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="var">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="video">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="wbr">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="html">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,22 @@
+FILES
+=================
+entities.json     : Copyright W3C. http://www.w3.org/TR/html5-author/entities.json. Contains some additional entities to XHTML 1.
+html5.dtd         : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 entities DTD, no element.
+html5.xsd         : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+xhtml-lat1.ent    : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
+xhtml-special.ent : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
+xhtml-symbol.ent  : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
+
+NOTES
+=====
+There is no official schemas for HTML 5 !!! It's because of the special attribute "data-*" which can't be validated and other non-compliant features. 
+The W3C simply forgot that we need auto-completion and validation when they did HTML5 ! So I did a short schema (html5.xsd) for HTML elements and a 
+DTD (html5.dtd) for the entities.
+
+TODO
+====
+http://www.html5dtd.org/
+-- OR --
+Find another source
+-- OR --
+Complete "html5.xsd" and "html5.dtd" !
