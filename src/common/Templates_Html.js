@@ -41,11 +41,11 @@
 			
 			create: function create(root, /*optional*/_options) {
 				"use strict";
-
+				
 				//===================================
 				// Get namespaces
 				//===================================
-
+				
 				var doodad = root.Doodad,
 					types = doodad.Types,
 					tools = doodad.Tools,
@@ -55,94 +55,96 @@
 					xml = tools.Xml,
 					templates = doodad.Templates,
 					templatesHtml = templates.Html;
-
-					
+				
+				
 				var __Internal__ = {
 					templatesCached: {},
 				};
-					
-					
+				
+				
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
-				{
-					$TYPE_NAME: 'PageTemplate',
-					
-					request: doodad.PUBLIC(doodad.READ_ONLY( null )),
-
-					__buffer: doodad.PROTECTED( null ),
-					
-					renderPromise: doodad.PUBLIC( null ),
-					
-					renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE()), // function(stream)
-					
-					create: doodad.OVERRIDE(function create(request, ddt) {
-						this._super();
-
-						this.setAttribute('request', request);
-					}),
-					
-					render: doodad.OVERRIDE(function render(stream) {
-						var Promise = tools.getPromise();
-						this.renderPromise = Promise.resolve();
-						this.__buffer = '';
-
-						this.renderTemplate(stream);
-					}),
-
-					asyncWrite: doodad.PROTECTED(function asyncWrite(code, /*optional*/flush) {
-						var Promise = tools.getPromise();
-						this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function() {
-							this.__buffer += (code || '');
-							if (flush || (this.__buffer.length >= (1024 * 1024 * 10))) {  // TODO: Find the magic buffer length value
-								var self = this;
-								return new Promise(function(resolve, reject) {
-									self.stream.write(self.__buffer, {callback: function(ex) {
-										if (ex) {
-									//console.log(ex);
-											reject(ex);
-										} else {
-											resolve();
-										};
-									}});
-									self.__buffer = '';
-								});
-							} else {
-								return Promise.resolve();
-							};
-						}));
-					}),
-					
-					asyncForEach: doodad.PROTECTED(function asyncForEach(items, fn) {
-						var Promise = tools.getPromise();
-						this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function() {
+					{
+						$TYPE_NAME: 'PageTemplate',
+						
+						request: doodad.PUBLIC(doodad.READ_ONLY(null)),
+						
+						__buffer: doodad.PROTECTED(null),
+						
+						renderPromise: doodad.PUBLIC(null),
+						
+						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE()), // function(stream)
+						
+						create: doodad.OVERRIDE(function create(request, ddt) {
+							this._super();
+							
+							this.setAttribute('request', request);
+						}),
+						
+						render: doodad.OVERRIDE(function render(stream) {
+							var Promise = tools.getPromise();
 							this.renderPromise = Promise.resolve();
-							tools.forEach(items, fn);
-							return this.renderPromise;
-						}));
-					}),
-					
-					asyncInclude: doodad.PROTECTED(function asyncInclude(fn) {
-						var Promise = tools.getPromise();
-						this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function() {
-							this.renderPromise = Promise.resolve();
-							fn();
-							return this.renderPromise;
-						}));
-					}),
-					
-					asyncScript: doodad.PROTECTED(function asyncScript(fn) {
-						var Promise = tools.getPromise();
-						this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function() {
-							this.renderPromise = Promise.resolve();
-							var result = fn();
-							if (result instanceof Promise) {
-								this.renderPromise = result;
-							};
-							return this.renderPromise;
-						}));
-					}),
-				})));
-
-
+							this.__buffer = '';
+							
+							this.renderTemplate(stream);
+						}),
+						
+						asyncWrite: doodad.PROTECTED(function asyncWrite(code, /*optional*/flush) {
+							var Promise = tools.getPromise();
+							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+								this.__buffer += (code || '');
+								if (flush || (this.__buffer.length >= (1024 * 1024 * 10))) {  // TODO: Find the magic buffer length value
+									var self = this;
+									return new Promise(function (resolve, reject) {
+										self.stream.write(self.__buffer, {
+											callback: function (ex) {
+												if (ex) {
+													//console.log(ex);
+													reject(ex);
+												} else {
+													resolve();
+												};
+											}
+										});
+										self.__buffer = '';
+									});
+								} else {
+									return Promise.resolve();
+								};
+							}));
+						}),
+						
+						asyncForEach: doodad.PROTECTED(function asyncForEach(items, fn) {
+							var Promise = tools.getPromise();
+							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+								this.renderPromise = Promise.resolve();
+								tools.forEach(items, fn);
+								return this.renderPromise;
+							}));
+						}),
+						
+						asyncInclude: doodad.PROTECTED(function asyncInclude(fn) {
+							var Promise = tools.getPromise();
+							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+								this.renderPromise = Promise.resolve();
+								fn();
+								return this.renderPromise;
+							}));
+						}),
+						
+						asyncScript: doodad.PROTECTED(function asyncScript(fn) {
+							var Promise = tools.getPromise();
+							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+								this.renderPromise = Promise.resolve();
+								var result = fn();
+								if (result instanceof Promise) {
+									this.renderPromise = result;
+								};
+								return this.renderPromise;
+							}));
+						}),
+					})));
+				
+				
 				templatesHtml.DDI = types.INIT(types.Type.$inherit(
 					/*typeProto*/
 					{
@@ -197,18 +199,18 @@
 						
 						getScriptHeader: function getScriptHeader() {
 							// NOTE: Returns the header of the "renderTemplate" function
-							return (function() {/**START**/
+							return (function() {
 								// Gives access to page object everywhere in "renderTemplate"
 								var page = this;
-							/**END**/}).toString().match(/[/][*][*]START[*][*][/]((.|\n|\r)*)[/][*][*]END[*][*][/]/)[1];
+							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						},
 						
 						getScriptFooter: function getScriptFooter() {
 							// NOTE: Returns the footer of the "renderTemplate" function
-							return (function() {/**START**/
+							return (function() {
 								// Flush buffer
 								page.asyncWrite(null, true);
-							/**END**/}).toString().match(/[/][*][*]START[*][*][/]((.|\n|\r)*)[/][*][*]END[*][*][/]/)[1];
+							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						},
 						
 						parse: function parse(parentPath) {
