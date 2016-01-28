@@ -8,7 +8,7 @@
 
 
 <!--
-	 dOOdad - Object-oriented programming framework with some extras
+	 dOOdad - Object-oriented programming framework
 	 File: ddt.xsd - DDT schema file
 	 Project home: https://sourceforge.net/projects/doodad-js/
 	 Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
@@ -17,7 +17,7 @@
 	 Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !
 	 License: Apache V2
 	
-		Copyright 2015 Claude Petit
+		Copyright 2016 Claude Petit
 	
 		Licensed under the Apache License, Version 2.0 (the "License");
 		you may not use this file except in compliance with the License.

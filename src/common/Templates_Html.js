@@ -1,5 +1,5 @@
-//! REPLACE_BY("// Copyright 2015 Claude Petit, licensed under Apache License version 2.0\n")
-// dOOdad - Object-oriented programming framework with some extras
+//! REPLACE_BY("// Copyright 2016 Claude Petit, licensed under Apache License version 2.0\n")
+// dOOdad - Object-oriented programming framework
 // File: Templates_Html.js - Templates module
 // Project home: https://sourceforge.net/projects/doodad-js/
 // Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
@@ -8,7 +8,7 @@
 // Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !
 // License: Apache V2
 //
-//	Copyright 2015 Claude Petit
+//	Copyright 2016 Claude Petit
 //
 //	Licensed under the Apache License, Version 2.0 (the "License");
 //	you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 	var global = this;
 
 	var exports = {};
-	if (global.process) {
+	if (typeof process === 'object') {
 		module.exports = exports;
 	};
 	
@@ -37,7 +37,17 @@
 			type: null,
 			version: '0d',
 			namespaces: null,
-			dependencies: ['Doodad.Types', 'Doodad.Tools', 'Doodad', 'Doodad.Widgets', 'Doodad.Tools.Xml'],
+			dependencies: [
+				'Doodad.Types', 
+				'Doodad.Tools', 
+				'Doodad', 
+				'Doodad.Widgets', 
+				{
+					name: 'Doodad.Tools.Xml', 
+					version: '1.1r',
+				},
+				'Doodad.Modules'
+			],
 			
 			create: function create(root, /*optional*/_options) {
 				"use strict";
@@ -50,7 +60,9 @@
 					types = doodad.Types,
 					tools = doodad.Tools,
 					namespaces = doodad.Namespaces,
+					modules = doodad.Modules,
 					files = tools.Files,
+					config = tools.Config,
 					widgets = doodad.Widgets,
 					xml = tools.Xml,
 					templates = doodad.Templates,
@@ -62,6 +74,41 @@
 				};
 				
 				
+				//__Internal__.oldSetOptions = templatesHtml.setOptions;
+				//templatesHtml.setOptions = function setOptions(/*paramarray*/) {
+				//	var options = __Internal__.oldSetOptions.apply(this, arguments),
+				//		settings = types.getDefault(options, 'settings', {});
+				//};
+				
+				templatesHtml.setOptions({
+					settings: {
+						resourcesPath: './res/', // Combined with package's root folder
+					},
+					hooks: {
+						// TODO: Make a better and common resources locator and loader
+						resourcesLoader: {
+							locate: function locate(fileName, /*optional*/options) {
+								return modules.locate('doodad-js-templates')
+									.then(function(location) {
+										return location.set({file: null}).combine(tools.getOptions().hooks.pathParser(templatesHtml.getOptions().settings.resourcesPath)).combine(tools.getOptions().hooks.pathParser(fileName));
+									});
+							},
+							load: function load(path, /*optional*/options) {
+								return config.loadFile(path, {async: true, watch: true, encoding: 'utf8'}, types.get(options, 'callback'));
+							},
+						},
+					},
+				}, _options);
+					
+				if (global.process && root.getOptions().settings.fromSource) {
+					templatesHtml.setOptions({
+						settings: {
+							resourcesPath: './src/common/res/',
+						},
+					});
+				};
+				
+
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
 						$TYPE_NAME: 'PageTemplate',
@@ -74,7 +121,7 @@
 						
 						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE()), // function(stream)
 						
-						create: doodad.OVERRIDE(function create(request, ddt) {
+						create: doodad.OVERRIDE(function create(request) {
 							this._super();
 							
 							this.setAttribute('request', request);
@@ -136,7 +183,7 @@
 							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
 								this.renderPromise = Promise.resolve();
 								var result = fn();
-								if (result instanceof Promise) {
+								if (tools.isPromise(result)) {
 									this.renderPromise = result;
 								};
 								return this.renderPromise;
@@ -307,7 +354,7 @@
 												};
 											} else if ((!state.isIf) && (name === 'include')) {
 												var path = child.getAttr('src');
-												path = self.path.combine(path, {isRelative: true, os: 'linux'});
+												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
 												var ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
 												self.codeParts.push(ddi);
 												state.promises.push(ddi.promise);
@@ -387,7 +434,7 @@
 
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super();
-							path = tools.options.hooks.pathParser(path, types.get(options, 'pathOptions'));
+							path = tools.getOptions().hooks.pathParser(path, types.get(options, 'pathOptions'));
 							this.type = type;
 							this.options = options;
 							this.name = path.file.replace(/[.]/g, '_');
@@ -502,9 +549,18 @@
 				// Init
 				//===================================
 				return function init(/*optional*/options) {
-					var configPath = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})()),
-						path = tools.options.hooks.pathParser('./res/schemas/html5/entities.json');
-					return xml.loadXmlEntities(configPath.combine(path));
+					return templatesHtml.getOptions().hooks.resourcesLoader.locate('./schemas/html5/entities.json')
+						.then(function(location) {
+							return templatesHtml.getOptions().hooks.resourcesLoader.load(location, {callback: function(err, entities) {
+								if (!err) {
+									entities = tools.reduce(entities, function(newEntities, value, name) {
+										newEntities[name.replace(/[&;]/g, '')] = value.characters;
+										return newEntities;
+									}, {});
+									xml.addXmlEntities(entities);
+								};
+							}});
+						});
 				};
 			},
 		};
@@ -512,8 +568,8 @@
 		return DD_MODULES;
 	};
 	
-	if (!global.process) {
+	if (typeof process !== 'object') {
 		// <PRB> export/import are not yet supported in browsers
 		global.DD_MODULES = exports.add(global.DD_MODULES);
 	};
-})();
+}).call((typeof global !== 'undefined') ? global : ((typeof window !== 'undefined') ? window : this));
