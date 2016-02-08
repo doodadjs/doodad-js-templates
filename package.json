@@ -1,6 +1,6 @@
 {
   "name": "doodad-js-templates",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "\"doodad-js\" Templates (alpha)",
   "homepage": "https://sourceforge.net/projects/doodad-js/",
   "main": "index.js",
@@ -40,7 +40,7 @@
     "email": "doodadjs@gmail.com"
   },
   "dependencies": {
-    "doodad-js": "^1.1.0",
+    "doodad-js": "^1.2.0",
     "doodad-js-widgets": "^0.1.0",
     "doodad-js-xml": "^1.1.0"
   },
