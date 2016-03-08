@@ -35,16 +35,24 @@
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['Doodad.Templates.Html'] = {
 			type: null,
-			version: '0d',
+			version: '0.2.0d',
 			namespaces: null,
 			dependencies: [
 				'Doodad.Types', 
 				'Doodad.Tools', 
-				'Doodad', 
+				'Doodad.Tools.Files', 
+				{
+					name: 'Doodad.Tools.SafeEval',
+					version: '0.1.0',
+				}, 
+				{
+					name: 'Doodad',
+					version: '2.0.0',
+				}, 
 				'Doodad.Widgets', 
 				{
 					name: 'Doodad.Tools.Xml', 
-					version: '1.1r',
+					version: '1.2.0',
 				},
 				'Doodad.Modules'
 			],
@@ -59,6 +67,7 @@
 				var doodad = root.Doodad,
 					types = doodad.Types,
 					tools = doodad.Tools,
+					safeEval = tools.SafeEval,
 					namespaces = doodad.Namespaces,
 					modules = doodad.Modules,
 					files = tools.Files,
@@ -90,7 +99,7 @@
 							locate: function locate(fileName, /*optional*/options) {
 								return modules.locate('doodad-js-templates')
 									.then(function(location) {
-										return location.set({file: null}).combine(tools.getOptions().hooks.pathParser(templatesHtml.getOptions().settings.resourcesPath)).combine(tools.getOptions().hooks.pathParser(fileName));
+										return location.set({file: null}).combine(files.getOptions().hooks.pathParser(templatesHtml.getOptions().settings.resourcesPath)).combine(files.getOptions().hooks.pathParser(fileName));
 									});
 							},
 							load: function load(path, /*optional*/options) {
@@ -124,11 +133,11 @@
 						create: doodad.OVERRIDE(function create(request) {
 							this._super();
 							
-							this.setAttribute('request', request);
+							types.setAttribute(this, 'request', request);
 						}),
 						
 						render: doodad.OVERRIDE(function render(stream) {
-							var Promise = tools.getPromise();
+							var Promise = types.getPromise();
 							this.renderPromise = Promise.resolve();
 							this.__buffer = '';
 							
@@ -136,8 +145,8 @@
 						}),
 						
 						asyncWrite: doodad.PROTECTED(function asyncWrite(code, /*optional*/flush) {
-							var Promise = tools.getPromise();
-							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+							var Promise = types.getPromise();
+							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
 								this.__buffer += (code || '');
 								if (flush || (this.__buffer.length >= (1024 * 1024 * 10))) {  // TODO: Find the magic buffer length value
 									var self = this;
@@ -161,8 +170,8 @@
 						}),
 						
 						asyncForEach: doodad.PROTECTED(function asyncForEach(items, fn) {
-							var Promise = tools.getPromise();
-							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+							var Promise = types.getPromise();
+							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
 								this.renderPromise = Promise.resolve();
 								tools.forEach(items, fn);
 								return this.renderPromise;
@@ -170,8 +179,8 @@
 						}),
 						
 						asyncInclude: doodad.PROTECTED(function asyncInclude(fn) {
-							var Promise = tools.getPromise();
-							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+							var Promise = types.getPromise();
+							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
 								this.renderPromise = Promise.resolve();
 								fn();
 								return this.renderPromise;
@@ -179,11 +188,11 @@
 						}),
 						
 						asyncScript: doodad.PROTECTED(function asyncScript(fn) {
-							var Promise = tools.getPromise();
-							this.renderPromise = this.renderPromise.then(new tools.PromiseCallback(this, function () {
+							var Promise = types.getPromise();
+							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
 								this.renderPromise = Promise.resolve();
 								var result = fn();
-								if (tools.isPromise(result)) {
+								if (types.isPromise(result)) {
 									this.renderPromise = result;
 								};
 								return this.renderPromise;
@@ -238,7 +247,7 @@
 						
 						getScriptVariables: function getScriptVariables() {
 							return {
-								Promise: tools.getPromise(),
+								Promise: types.getPromise(),
 								console: console,
 								escapeHtml: tools.escapeHtml,
 							};
@@ -428,27 +437,27 @@
 							writeHTML(state);
 							writeAsyncWrites(state);
 							
-							var Promise = tools.getPromise();
+							var Promise = types.getPromise();
 							return Promise.all(state.promises);
 						},
 
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super();
-							path = tools.getOptions().hooks.pathParser(path, types.get(options, 'pathOptions'));
+							path = files.getOptions().hooks.pathParser(path, types.get(options, 'pathOptions'));
 							this.type = type;
 							this.options = options;
 							this.name = path.file.replace(/[.]/g, '_');
 							this.path = path;
 							this.parents = new types.Map();
 							this.promise = files.openFile(path, {encoding: types.get(options, 'encoding', 'utf8')})
-								.then(new tools.PromiseCallback(this, function(stream) {
+								.then(new types.PromiseCallback(this, function(stream) {
 									return xml.parse(stream, {discardEntities: true})
-										.then(new tools.PromiseCallback(this, function(doc) {
+										.then(new types.PromiseCallback(this, function(doc) {
 											this.doc = doc;
 								//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
 											return this.parse(path)
-												.then(new tools.PromiseCallback(this, function() {
+												.then(new types.PromiseCallback(this, function() {
 													return this;
 												}))
 										}));
@@ -506,7 +515,7 @@
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super(path, type, options);
 							
-							this.promise = this.promise.then(tools.PromiseCallback(this, function() {
+							this.promise = this.promise.then(types.PromiseCallback(this, function() {
 								var ddtNode = this.doc.root,
 									name = ddtNode.attributes['type'].nodeValue;
 									
@@ -517,7 +526,7 @@
 									var code = this.toString('', true);
 						//console.log(code);
 									var locals = this.getScriptVariables();
-									var fn = tools.safeEval.createEval(types.keys(locals))
+									var fn = safeEval.createEval(types.keys(locals))
 									fn = fn.apply(null, types.values(locals));
 									fn = fn('(' + code + ')');
 						//console.log(fn);

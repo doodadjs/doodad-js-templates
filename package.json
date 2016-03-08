@@ -1,7 +1,7 @@
 {
   "name": "doodad-js-templates",
-  "version": "0.1.8",
-  "description": "\"doodad-js\" Templates (alpha)",
+  "version": "0.2.1",
+  "description": "doodad-js Templates (alpha)",
   "homepage": "https://sourceforge.net/projects/doodad-js/",
   "main": "index.js",
   "files": [
@@ -40,12 +40,13 @@
     "email": "doodadjs@gmail.com"
   },
   "dependencies": {
-    "doodad-js": "^1.2.0",
-    "doodad-js-widgets": "^0.1.0",
-    "doodad-js-xml": "^1.1.0"
+    "doodad-js": "^2.0.0",
+    "doodad-js-widgets": "^0.2.0",
+    "doodad-js-xml": "^1.2.0",
+    "doodad-js-safeeval": "^0.1.0"
   },
   "devDependencies": {
-    "doodad-js-make": "^0.2.0"
+    "doodad-js-make": "^0.3.0"
   },
   "tonicExampleFilename": "tonic.js",
   "browser": "./browserify.js"

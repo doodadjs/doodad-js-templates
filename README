@@ -25,8 +25,11 @@ $ npm install doodad-js-templates
   -  Client-side (browsers) and server-side (node.js).
 
 NOTE: Starting from version 5, HTML should be valid XML. Obviously, some misconceptions of HTML 5 break this rule, so some "negligible" parts of HTML 5 *MIGHT* not be usable. I will fix that later.
+
 NOTE: HTML version 4.x and lower versions are not supported because they almost break XML.
+
 NOTE: I'm waiting for more elaborated DTD and XSD files from " http://www.html5dtd.org/ ". But the author seems very busy.
+
 
 ## Quick Start
 
@@ -63,13 +66,14 @@ Then load 'doodad-js-templates' and its dependencies :
     require('doodad-js-io').add(modules);
     require('doodad-js-xml').add(modules);
     require('doodad-js-widgets').add(modules);
+    require('doodad-js-safeeval').add(modules);
     require('doodad-js-templates').add(modules);
     
     function startup() {
 		// Your code here...
     };
     
-    namespaces.loadNamespaces(startup, false, null, modules);
+    namespaces.loadNamespaces(modules, startup);
 ```
 
 ## Example
