@@ -40,6 +40,7 @@
 			dependencies: [
 				'Doodad.Types', 
 				'Doodad.Tools', 
+				'Doodad.Tools.Config',
 				'Doodad.Tools.Files', 
 				{
 					name: 'Doodad.Tools.SafeEval',
