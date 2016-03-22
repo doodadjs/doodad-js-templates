@@ -35,7 +35,7 @@
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['Doodad.Templates.Html'] = {
 			type: null,
-			version: '0.2.0d',
+			version: '0.2.5a',
 			namespaces: null,
 			dependencies: [
 				'Doodad.Types', 
@@ -44,13 +44,16 @@
 				'Doodad.Tools.Files', 
 				{
 					name: 'Doodad.Tools.SafeEval',
-					version: '0.1.0',
+					version: '0.2.0',
 				}, 
 				{
 					name: 'Doodad',
-					version: '2.0.0',
+					version: '2.2.0',
 				}, 
-				'Doodad.Widgets', 
+				{
+					name: 'Doodad.Widgets', 
+					version: '0.3.0',
+				}, 
 				{
 					name: 'Doodad.Tools.Xml', 
 					version: '1.2.0',
@@ -87,7 +90,7 @@
 				//__Internal__.oldSetOptions = templatesHtml.setOptions;
 				//templatesHtml.setOptions = function setOptions(/*paramarray*/) {
 				//	var options = __Internal__.oldSetOptions.apply(this, arguments),
-				//		settings = types.getDefault(options, 'settings', {});
+				//		settings = types.get(options, 'settings', {});
 				//};
 				
 				templatesHtml.setOptions({
@@ -100,11 +103,17 @@
 							locate: function locate(fileName, /*optional*/options) {
 								return modules.locate('doodad-js-templates')
 									.then(function(location) {
-										return location.set({file: null}).combine(files.getOptions().hooks.pathParser(templatesHtml.getOptions().settings.resourcesPath)).combine(files.getOptions().hooks.pathParser(fileName));
+										var filesOptions = files.getOptions();
+										var templatesOptions = templatesHtml.getOptions();
+										var resourcesPath = filesOptions.hooks.pathParser(templatesOptions.settings.resourcesPath);
+										var filePath = filesOptions.hooks.pathParser(fileName);
+										return location.set({file: null})
+											.combine(resourcesPath)
+											.combine(filePath);
 									});
 							},
 							load: function load(path, /*optional*/options) {
-								return config.loadFile(path, {async: true, watch: true, encoding: 'utf8'}, types.get(options, 'callback'));
+								return config.loadFile(path, {async: true, watch: true, encoding: 'utf-8'}, types.get(options, 'callback'));
 							},
 						},
 					},
@@ -273,9 +282,9 @@
 						parse: function parse(parentPath) {
 							// TODO: ES7 (async/await) when widely supported (both in all supported browsers & nodejs)
 							
-							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
+							var DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							
-							var doctype = this.doc.doctype && this.doc.doctype.nodeValue.trim().split(' ');
+							var doctype = this.doc.doctype && tools.trim(this.doc.doctype.nodeValue).split(' ');
 							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
 								throw new types.ParseError("Document type is missing or invalid.");
 							};
@@ -397,7 +406,7 @@
 												state.html += '"';
 											};
 											// <PRB> Browsers do not well support "<name />"
-											var hasChildren = !!child.childNodes.length || (name === 'head') || (['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'].indexOf(name) < 0);
+											var hasChildren = !!child.childNodes.length || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
 											if (hasChildren) {
 												state.html += '>';
 											};
@@ -450,7 +459,7 @@
 							this.name = path.file.replace(/[.]/g, '_');
 							this.path = path;
 							this.parents = new types.Map();
-							this.promise = files.openFile(path, {encoding: types.get(options, 'encoding', 'utf8')})
+							this.promise = files.openFile(path, {encoding: types.get(options, 'encoding', 'utf-8')})
 								.then(new types.PromiseCallback(this, function(stream) {
 									return xml.parse(stream, {discardEntities: true})
 										.then(new types.PromiseCallback(this, function(doc) {
