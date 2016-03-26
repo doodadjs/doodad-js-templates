@@ -35,31 +35,9 @@
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['Doodad.Templates.Html'] = {
 			type: null,
-			version: '0.2.5a',
+			//! INSERT("version:'" + VERSION('doodad-js-templates') + "',")
 			namespaces: null,
-			dependencies: [
-				'Doodad.Types', 
-				'Doodad.Tools', 
-				'Doodad.Tools.Config',
-				'Doodad.Tools.Files', 
-				{
-					name: 'Doodad.Tools.SafeEval',
-					version: '0.2.0',
-				}, 
-				{
-					name: 'Doodad',
-					version: '2.2.0',
-				}, 
-				{
-					name: 'Doodad.Widgets', 
-					version: '0.3.0',
-				}, 
-				{
-					name: 'Doodad.Tools.Xml', 
-					version: '1.2.0',
-				},
-				'Doodad.Modules'
-			],
+			dependencies: null,
 			
 			create: function create(root, /*optional*/_options) {
 				"use strict";

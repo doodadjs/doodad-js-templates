@@ -27,11 +27,31 @@ module.exports = {
 	add: function add(DD_MODULES) {
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['doodad-js-templates'] = {
-			type: null,
-			version: '0.2.5a',
+			type: 'Package',
+			//! INSERT("version:'" + VERSION('doodad-js-templates') + "',")
 			namespaces: null,
-			dependencies: null,
-			exports: module.exports,
+			dependencies: [
+				{
+					name: 'doodad-js',
+					//! INSERT("version:'" + VERSION('doodad-js') + "',")
+				},
+				{
+					name: 'doodad-js-io',
+					//! INSERT("version:'" + VERSION('doodad-js-io') + "',")
+				},
+				{
+					name: 'doodad-js-safeeval',
+					//! INSERT("version:'" + VERSION('doodad-js-safeeval') + "',")
+				}, 
+				{
+					name: 'doodad-js-widgets', 
+					//! INSERT("version:'" + VERSION('doodad-js-widgets') + "',")
+				}, 
+				{
+					name: 'doodad-js-xml', 
+					//! INSERT("version:'" + VERSION('doodad-js-xml') + "',")
+				},
+			],
 			
 			create: function create(root, /*optional*/_options) {
 				var config = null;
@@ -45,7 +65,10 @@ module.exports = {
 				require('./browserify/resources.js').add(modules);
 				require("./dist/doodad-js-templates/Templates_Html.min.js").add(modules);
 				
-				return root.Doodad.Namespaces.loadNamespaces(modules, null, config, false);
+				return root.Doodad.Namespaces.loadNamespaces(modules, null, config, false)
+					.then(function() {
+						// Returns nothing
+					});
 			},
 		};
 		return DD_MODULES;
