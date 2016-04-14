@@ -69,11 +69,6 @@
 				};
 				
 				
-				//__Internal__.oldSetOptions = templatesHtml.setOptions;
-				//templatesHtml.setOptions = function setOptions(/*paramarray*/) {
-				//	var options = __Internal__.oldSetOptions.apply(this, arguments);
-				//};
-				
 				templatesHtml.setOptions({
 					resourcesPath: './res/', // Combined with package's root folder
 					hooks: {
