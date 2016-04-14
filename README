@@ -73,7 +73,7 @@ Then load 'doodad-js-templates' and its dependencies :
 		// Your code here...
     };
     
-    namespaces.loadNamespaces(modules, startup);
+    namespaces.load(modules, startup);
 ```
 
 ## Example

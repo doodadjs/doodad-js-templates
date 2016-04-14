@@ -1,4 +1,4 @@
-//! REPLACE_BY("// Copyright 2016 Claude Petit, licensed under Apache License version 2.0\n")
+//! REPLACE_BY("// Copyright 2016 Claude Petit, licensed under Apache License version 2.0\n", true)
 // dOOdad - Object-oriented programming framework
 // File: Templates_Html.js - Templates module
 // Project home: https://sourceforge.net/projects/doodad-js/
@@ -27,17 +27,21 @@
 	var global = this;
 
 	var exports = {};
-	if (typeof process === 'object') {
-		module.exports = exports;
+	
+	//! BEGIN_REMOVE()
+	if ((typeof process === 'object') && (typeof module === 'object')) {
+	//! END_REMOVE()
+		//! IF_DEF("serverSide")
+			module.exports = exports;
+		//! END_IF()
+	//! BEGIN_REMOVE()
 	};
+	//! END_REMOVE()
 	
 	exports.add = function add(DD_MODULES) {
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['Doodad.Templates.Html'] = {
-			type: null,
-			//! INSERT("version:'" + VERSION('doodad-js-templates') + "',")
-			namespaces: null,
-			dependencies: null,
+			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE() */,
 			
 			create: function create(root, /*optional*/_options) {
 				"use strict";
@@ -67,44 +71,31 @@
 				
 				//__Internal__.oldSetOptions = templatesHtml.setOptions;
 				//templatesHtml.setOptions = function setOptions(/*paramarray*/) {
-				//	var options = __Internal__.oldSetOptions.apply(this, arguments),
-				//		settings = types.get(options, 'settings', {});
+				//	var options = __Internal__.oldSetOptions.apply(this, arguments);
 				//};
 				
 				templatesHtml.setOptions({
-					settings: {
-						resourcesPath: './res/', // Combined with package's root folder
-					},
+					resourcesPath: './res/', // Combined with package's root folder
 					hooks: {
 						// TODO: Make a better and common resources locator and loader
 						resourcesLoader: {
 							locate: function locate(fileName, /*optional*/options) {
-								return modules.locate('doodad-js-templates')
-									.then(function(location) {
-										var filesOptions = files.getOptions();
-										var templatesOptions = templatesHtml.getOptions();
-										var resourcesPath = filesOptions.hooks.pathParser(templatesOptions.settings.resourcesPath);
-										var filePath = filesOptions.hooks.pathParser(fileName);
-										return location.set({file: null})
-											.combine(resourcesPath)
-											.combine(filePath);
-									});
+								var Promise = types.getPromise();
+								var filesOptions = files.getOptions();
+								var templatesOptions = templatesHtml.getOptions();
+								var path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
+									.set({file: null})
+									.combine(filesOptions.hooks.pathParser(templatesOptions.resourcesPath))
+									.combine(filesOptions.hooks.pathParser(fileName));
+								return Promise.resolve(path);
 							},
 							load: function load(path, /*optional*/options) {
-								return config.loadFile(path, {async: true, watch: true, encoding: 'utf-8'}, types.get(options, 'callback'));
+								return config.loadFile(path, { async: true, watch: true, encoding: 'utf-8' }, types.get(options, 'callback'));
 							},
 						},
 					},
 				}, _options);
 					
-				if (global.process && root.getOptions().settings.fromSource) {
-					templatesHtml.setOptions({
-						settings: {
-							resourcesPath: './src/common/res/',
-						},
-					});
-				};
-				
 
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
@@ -236,7 +227,6 @@
 						getScriptVariables: function getScriptVariables() {
 							return {
 								Promise: types.getPromise(),
-								console: console,
 								escapeHtml: tools.escapeHtml,
 							};
 						},
@@ -565,8 +555,23 @@
 		return DD_MODULES;
 	};
 	
-	if (typeof process !== 'object') {
-		// <PRB> export/import are not yet supported in browsers
-		global.DD_MODULES = exports.add(global.DD_MODULES);
+	//! BEGIN_REMOVE()
+	if ((typeof process !== 'object') || (typeof module !== 'object')) {
+	//! END_REMOVE()
+		//! IF_UNDEF("serverSide")
+			// <PRB> export/import are not yet supported in browsers
+			global.DD_MODULES = exports.add(global.DD_MODULES);
+		//! END_IF()
+	//! BEGIN_REMOVE()
 	};
-}).call((typeof global !== 'undefined') ? global : ((typeof window !== 'undefined') ? window : this));
+	//! END_REMOVE()
+}).call(
+	//! BEGIN_REMOVE()
+	(typeof window !== 'undefined') ? window : ((typeof global !== 'undefined') ? global : this)
+	//! END_REMOVE()
+	//! IF_DEF("serverSide")
+	//! 	INJECT("global")
+	//! ELSE()
+	//! 	INJECT("window")
+	//! END_IF()
+);
