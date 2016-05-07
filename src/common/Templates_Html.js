@@ -247,12 +247,12 @@
 							
 							var DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							
-							var doctype = this.doc.doctype && tools.trim(this.doc.doctype.nodeValue).split(' ');
+							var doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
 							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
 								throw new types.ParseError("Document type is missing or invalid.");
 							};
 
-							var ddi = this.doc.root,
+							var ddi = this.doc.getRoot(),
 								self = this;
 
 							var writeHTML = function writeHTML(state) {
@@ -270,14 +270,13 @@
 							};
 							
 							var parseNode = function parseNode(node, state) {
-								for (var i = 0; i < node.childNodes.length; i++) {
-									var child = node.childNodes[i];
-									if (child.nodeType === xml.NodeTypes.Element) {
-										var name = child.nodeName,
-											ns = child.baseURI;
+								node.getChildren().forEach(function(child, pos, ar) {
+									if (child instanceof xml.Element) {
+										var name = child.getName(),
+											ns = child.getBaseURI();
 
 										if ((ns === 't') && (name === 'doctype') && !state.hasDocType) {
-											state.html += '<!DOCTYPE ' + (child.nodeValue || 'html') + '>\n'
+											state.html += '<!DOCTYPE ' + (child.getValue() || 'html') + '>\n'
 											state.hasDocType = true;
 										} else if (!state.hasDocType) {
 											state.html += '<!DOCTYPE html>\n'
@@ -292,7 +291,7 @@
 												if (vars.length) {
 													self.codeParts.push('var ' + vars.join(', ') + ' = null;');
 												};
-												self.codeParts.push('page.asyncScript(function() {' + (child.childNodes.length && child.childNodes[0].nodeValue) + '});'); // CDATA or Text
+												self.codeParts.push('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'for-each')) {
 												self.codeParts.push('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', function(' + (child.getAttr('item') || 'item') + ') {');
 												parseNode(child, state);
@@ -300,7 +299,7 @@
 												writeAsyncWrites(state);
 												self.codeParts.push('});');
 											} else if ((!state.isIf) && (name === 'eval')) {
-												self.codeParts.push('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + child.childNodes[0].nodeValue + ') + ""))});'); // CDATA or Text
+												self.codeParts.push('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'if') && (state.expr = child.getAttr('expr'))) {
 												self.codeParts.push('page.asyncScript(function() {var __expr__ = !!(' + state.expr + ');');
 												var newState = types.extend({}, state, {isIf: true});
@@ -343,21 +342,19 @@
 												ddi.parents.set(self, parentPath.toString());
 												//console.log('SIZE ' + ddi.parents.size);
 											};
-										} else if ((!state.isIf) && (child.nodeName === 'html') && (self.type === 'ddi')) {
+										} else if ((!state.isIf) && (child.getName() === 'html') && (self.type === 'ddi')) {
 											parseNode(child, state);
 										} else if (!state.isIf) {
 											if (name === 'head') {
 												state.isHead = true;
-											} else if (state.isHead && (child.nodeName === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
+											} else if (state.isHead && (child.getName() === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
 												state.hasCharset = true;
 											};
 											state.html += '<' + name;
-											var attrs = types.keys(child.attributes);
-											for (var j = 0; j < attrs.length; j++) {
-												var key = attrs[j],
-													attr = child.attributes[key],
-													value = attr.nodeValue,
-													ns = attr.baseURI;
+											child.getAttrs().forEach(function(attr, j, ar2) {
+												var key = attr.getName(),
+													value = attr.getValue(),
+													ns = attr.getBaseURI();
 												state.html += ' ' + key + '="';
 												if (ns === DDT_URI) {
 													writeHTML(state);
@@ -367,9 +364,9 @@
 													state.html += value;
 												};
 												state.html += '"';
-											};
+											}, this);
 											// <PRB> Browsers do not well support "<name />"
-											var hasChildren = !!child.childNodes.length || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
+											var hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
 											if (hasChildren) {
 												state.html += '>';
 											};
@@ -387,12 +384,12 @@
 												state.isHead = false;
 											};
 										};
-									} else if ((!state.isIf) && (child.nodeType === xml.NodeTypes.Text)) {
-										state.html += child.nodeValue.replace(/\r|\n|\t/g, '').replace(/[ ]+/g, ' ');
-									} else if ((!state.isIf) && (child.nodeType === xml.NodeTypes.CDATASection)) {
-										state.html += '<![CDATA[' + child.nodeValue + ']]';
+									} else if ((!state.isIf) && (child instanceof xml.Text)) {
+										state.html += child.getValue().replace(/\r|\n|\t/g, '').replace(/[ ]+/g, ' ');
+									} else if ((!state.isIf) && (child instanceof xml.CDATASection)) {
+										state.html += '<![CDATA[' + child.getValue() + ']]';
 									};
-								};
+								}, this);
 							};
 							
 							var state = {
@@ -489,8 +486,8 @@
 							this._super(path, type, options);
 							
 							this.promise = this.promise.then(types.PromiseCallback(this, function() {
-								var ddtNode = this.doc.root,
-									name = ddtNode.attributes['type'].nodeValue;
+								var ddtNode = this.doc.getRoot(),
+									name = ddtNode.getAttr('type');
 									
 									var type = namespaces.getNamespace(name);
 									

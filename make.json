@@ -27,35 +27,30 @@
 	"dependencies": [
 		{
 			"name": "doodad-js",
-			"optional": false,
 			"client": true,
 			"server": true,
 			"browserify": true
 		},
 		{
 			"name": "doodad-js-io",
-			"optional": false,
 			"client": true,
 			"server": true,
 			"browserify": true
 		},
 		{
 			"name": "doodad-js-widgets",
-			"optional": false,
 			"client": true,
 			"server": true,
 			"browserify": true
 		},
 		{
 			"name": "doodad-js-xml",
-			"optional": false,
 			"client": true,
 			"server": true,
 			"browserify": true
 		},
 		{
 			"name": "doodad-js-safeeval",
-			"optional": false,
 			"client": true,
 			"server": true,
 			"browserify": true
