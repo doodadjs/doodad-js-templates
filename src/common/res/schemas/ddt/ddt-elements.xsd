@@ -81,7 +81,7 @@
 		<xs:complexType>
 			<xs:complexContent>
 				<xs:extension base="t:when_type">
-					<xs:attribute name="expr" use="required"/>
+					<xs:attribute name="expr" type="xs:string" use="required"/>
 				</xs:extension>
 			</xs:complexContent>
 		</xs:complexType>
@@ -90,7 +90,7 @@
 		<xs:complexType>
 			<xs:complexContent>
 				<xs:extension base="t:when_type">
-					<xs:attribute name="expr" use="required"/>
+					<xs:attribute name="expr" type="xs:string" use="required"/>
 				</xs:extension>
 			</xs:complexContent>
 		</xs:complexType>
@@ -101,7 +101,15 @@
 				<xs:element form="qualified" minOccurs="0" name="when-true" type="t:when_type"/>
 				<xs:element form="qualified" minOccurs="0" name="when-false" type="t:when_type"/>
 			</xs:sequence>
-			<xs:attribute name="expr" use="required"/>
+			<xs:attribute name="expr" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="variable">
+		<xs:complexType>
+			<xs:sequence maxOccurs="unbound">
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:string" use="required"/>
+			<xs:attribute name="expr" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
 </xs:schema>

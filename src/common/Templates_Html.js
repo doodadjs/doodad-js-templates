@@ -185,7 +185,7 @@
 								key = path.toString();
 								
 							var ddi;
-							if (types.hasKey(templates, key)) {
+							if (types.has(templates, key)) {
 								//console.log('CACHED ' + key);
 								ddi = templates[key];
 							} else {
@@ -275,7 +275,7 @@
 										var name = child.getName(),
 											ns = child.getBaseURI();
 
-										if ((ns === 't') && (name === 'doctype') && !state.hasDocType) {
+										if ((ns === DDT_URI) && (name === 'doctype') && !state.hasDocType) {
 											state.html += '<!DOCTYPE ' + (child.getValue() || 'html') + '>\n'
 											state.hasDocType = true;
 										} else if (!state.hasDocType) {
@@ -333,6 +333,11 @@
 												if (!state.isIf) {
 													self.codeParts.push('});');
 												};
+											} else if ((!state.isIf) && (name === 'variable')) {
+												// TODO: Combine "variable" tags
+												// FUTURE: "let" but must check if already defined in scope
+												self.codeParts.push('var ' + child.getAttr('name') + ';');
+												self.codeParts.push('page.asyncScript(function() {' + child.getAttr('name') + ' = (' + child.getAttr('expr') + ')});');
 											} else if ((!state.isIf) && (name === 'include')) {
 												var path = child.getAttr('src');
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
@@ -351,7 +356,7 @@
 												state.hasCharset = true;
 											};
 											state.html += '<' + name;
-											child.getAttrs().forEach(function(attr, j, ar2) {
+											child.getAttrs().forEach(function(attr) {
 												var key = attr.getName(),
 													value = attr.getValue(),
 													ns = attr.getBaseURI();
@@ -385,7 +390,7 @@
 											};
 										};
 									} else if ((!state.isIf) && (child instanceof xml.Text)) {
-										state.html += child.getValue().replace(/\r|\n|\t/g, '').replace(/[ ]+/g, ' ');
+										state.html += child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' ');
 									} else if ((!state.isIf) && (child instanceof xml.CDATASection)) {
 										state.html += '<![CDATA[' + child.getValue() + ']]';
 									};
@@ -423,6 +428,7 @@
 								.then(new types.PromiseCallback(this, function(stream) {
 									return xml.parse(stream, {discardEntities: true})
 										.then(new types.PromiseCallback(this, function(doc) {
+											stream.destroy();
 											this.doc = doc;
 								//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
@@ -485,6 +491,8 @@
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super(path, type, options);
 							
+							var code;
+							
 							this.promise = this.promise.then(types.PromiseCallback(this, function() {
 								var ddtNode = this.doc.getRoot(),
 									name = ddtNode.getAttr('type');
@@ -493,7 +501,7 @@
 									
 									root.DD_ASSERT && root.DD_ASSERT(types._implements(type, templatesHtml.PageTemplate), "Unknown page template '~0~'.", [name])
 									
-									var code = this.toString('', true);
+									code = this.toString('', true);
 						//console.log(code);
 									var locals = this.getScriptVariables();
 									var fn = safeEval.createEval(types.keys(locals))
@@ -507,7 +515,11 @@
 										
 										renderTemplate: doodad.OVERRIDE(fn),
 									});
-							}));
+							}))
+							['catch'](function (err) {
+								console.log(code);
+								throw err;
+							});
 						}),
 					}
 				));
