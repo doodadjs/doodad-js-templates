@@ -43,7 +43,7 @@
 		DD_MODULES['Doodad.Templates.Html'] = {
 			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE() */,
 			
-			create: function create(root, /*optional*/_options) {
+			create: function create(root, /*optional*/_options, _shared) {
 				"use strict";
 				
 				//===================================
@@ -69,29 +69,41 @@
 				};
 				
 				
-				templatesHtml.setOptions({
+				var __options__ = types.extend({
 					resourcesPath: './res/', // Combined with package's root folder
-					hooks: {
-						// TODO: Make a better and common resources locator and loader
-						resourcesLoader: {
-							locate: function locate(fileName, /*optional*/options) {
-								var Promise = types.getPromise();
-								var filesOptions = files.getOptions();
-								var templatesOptions = templatesHtml.getOptions();
-								var path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
-									.set({file: null})
-									.combine(filesOptions.hooks.pathParser(templatesOptions.resourcesPath))
-									.combine(filesOptions.hooks.pathParser(fileName));
-								return Promise.resolve(path);
-							},
-							load: function load(path, /*optional*/options) {
-								return config.loadFile(path, { async: true, watch: true, encoding: 'utf-8' }, types.get(options, 'callback'));
-							},
-						},
-					},
 				}, _options);
-					
 
+				types.freezeObject(__options__);
+
+				templatesHtml.getOptions = function() {
+					return __options__;
+				};
+
+				
+				
+				// TODO: Make a better and common resources locator and loader
+				__Internal__.resourcesLoader = {
+					locate: function locate(fileName, /*optional*/options) {
+						var Promise = types.getPromise();
+						return Promise['try'](function tryLocate() {
+							var path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
+								.set({file: null})
+								.combine(_shared.pathParser(__options__.resourcesPath))
+								.combine(_shared.pathParser(fileName));
+							return path;
+						});
+					},
+					load: function load(path, /*optional*/options) {
+						return config.loadFile(path, { async: true, watch: true, encoding: 'utf-8' }, types.get(options, 'callback'));
+					},
+				};
+				
+				templatesHtml.setResourcesLoader = function setResourcesLoader(loader) {
+					__Internal__.resourcesLoader = loader;
+				};
+
+				
+				
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
 						$TYPE_NAME: 'PageTemplate',
@@ -103,11 +115,19 @@
 						renderPromise: doodad.PUBLIC(null),
 						
 						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE()), // function(stream)
+
+						$ddt: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
+						$create: doodad.OVERRIDE(function $create(ddt) {
+							this._super();
+							
+							_shared.setAttribute(this, '$ddt', ddt);
+						}),
+
 						create: doodad.OVERRIDE(function create(request) {
 							this._super();
 							
-							types.setAttribute(this, 'request', request);
+							_shared.setAttribute(this, 'request', request);
 						}),
 						
 						render: doodad.OVERRIDE(function render(stream) {
@@ -118,14 +138,13 @@
 							this.renderTemplate(stream);
 						}),
 						
-						asyncWrite: doodad.PROTECTED(function asyncWrite(code, /*optional*/flush) {
+						asyncWrite: doodad.PROTECTED(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
+							this.renderPromise = this.renderPromise.then(function () {
 								this.__buffer += (code || '');
 								if (flush || (this.__buffer.length >= (1024 * 1024 * 10))) {  // TODO: Find the magic buffer length value
-									var self = this;
-									return new Promise(function (resolve, reject) {
-										self.stream.write(self.__buffer, {
+									return Promise.create(function asyncWritePromise(resolve, reject) {
+										this.stream.write(this.__buffer, {
 											callback: function (ex) {
 												if (ex) {
 													//console.log(ex);
@@ -135,43 +154,43 @@
 												};
 											}
 										});
-										self.__buffer = '';
-									});
+										this.__buffer = '';
+									}, this);
 								} else {
 									return Promise.resolve();
 								};
-							}));
-						}),
+							}, null, this);
+						})),
 						
-						asyncForEach: doodad.PROTECTED(function asyncForEach(items, fn) {
+						asyncForEach: doodad.PROTECTED(doodad.ASYNC(function asyncForEach(items, fn) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
+							this.renderPromise = this.renderPromise.then(function () {
 								this.renderPromise = Promise.resolve();
 								tools.forEach(items, fn);
 								return this.renderPromise;
-							}));
-						}),
+							}, null, this);
+						})),
 						
-						asyncInclude: doodad.PROTECTED(function asyncInclude(fn) {
+						asyncInclude: doodad.PROTECTED(doodad.ASYNC(function asyncInclude(fn) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
+							this.renderPromise = this.renderPromise.then(function () {
 								this.renderPromise = Promise.resolve();
 								fn();
 								return this.renderPromise;
-							}));
-						}),
+							}, null, this);
+						})),
 						
-						asyncScript: doodad.PROTECTED(function asyncScript(fn) {
+						asyncScript: doodad.PROTECTED(doodad.ASYNC(function asyncScript(fn) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(new types.PromiseCallback(this, function () {
+							this.renderPromise = this.renderPromise.then(function () {
 								this.renderPromise = Promise.resolve();
 								var result = fn();
 								if (types.isPromise(result)) {
 									this.renderPromise = result;
 								};
 								return this.renderPromise;
-							}));
-						}),
+							}, null, this);
+						})),
 					})));
 				
 				
@@ -242,7 +261,7 @@
 							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						},
 						
-						parse: function parse(parentPath) {
+						parse: doodad.ASYNC(function parse(parentPath) {
 							// TODO: ES7 (async/await) when widely supported (both in all supported browsers & nodejs)
 							
 							var DDT_URI = "http://www.doodad-js.local/schemas/ddt"
@@ -414,30 +433,31 @@
 							
 							var Promise = types.getPromise();
 							return Promise.all(state.promises);
-						},
+						}),
 
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super();
-							path = files.getOptions().hooks.pathParser(path, types.get(options, 'pathOptions'));
+							path = _shared.pathParser(path, types.get(options, 'pathOptions'));
 							this.type = type;
-							this.options = options;
+							this.options = types.extend({}, options);
 							this.name = path.file.replace(/[.]/g, '_');
 							this.path = path;
 							this.parents = new types.Map();
-							this.promise = files.openFile(path, {encoding: types.get(options, 'encoding', 'utf-8')})
-								.then(new types.PromiseCallback(this, function(stream) {
+							var encoding = types.getDefault(this.options, 'encoding', 'utf-8');
+							this.promise = files.openFile(path, {encoding: encoding})
+								.then(function(stream) {
 									return xml.parse(stream, {discardEntities: true})
-										.then(new types.PromiseCallback(this, function(doc) {
+										.then(function(doc) {
 											stream.destroy();
 											this.doc = doc;
 								//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
 											return this.parse(path)
-												.then(new types.PromiseCallback(this, function() {
+												.then(function() {
 													return this;
-												}))
-										}));
-								}));
+												}, null, this);
+										}, null, this);
+								}, null, this);
 						}),
 						
 						toString: function toString(/*optional*/level, /*optional*/writeHeader) {
@@ -493,11 +513,11 @@
 							
 							var code;
 							
-							this.promise = this.promise.then(types.PromiseCallback(this, function() {
+							this.promise = this.promise.then(function() {
 								var ddtNode = this.doc.getRoot(),
 									name = ddtNode.getAttr('type');
 									
-									var type = namespaces.getNamespace(name);
+									var type = namespaces.get(name);
 									
 									root.DD_ASSERT && root.DD_ASSERT(types._implements(type, templatesHtml.PageTemplate), "Unknown page template '~0~'.", [name])
 									
@@ -509,13 +529,13 @@
 									fn = fn('(' + code + ')');
 						//console.log(fn);
 
-									return type.$extend(
+									return types.INIT(type.$extend(
 									{
 										$TYPE_NAME: '__' + type.$TYPE_NAME,
 										
 										renderTemplate: doodad.OVERRIDE(fn),
-									});
-							}))
+									}), [this]);
+							}, null, this)
 							['catch'](function (err) {
 								console.log(code);
 								throw err;
@@ -540,9 +560,9 @@
 				// Init
 				//===================================
 				return function init(/*optional*/options) {
-					return templatesHtml.getOptions().hooks.resourcesLoader.locate('./schemas/html5/entities.json')
+					return __Internal__.resourcesLoader.locate('./schemas/html5/entities.json')
 						.then(function(location) {
-							return templatesHtml.getOptions().hooks.resourcesLoader.load(location, {callback: function(err, entities) {
+							return __Internal__.resourcesLoader.load(location, {callback: function(err, entities) {
 								if (!err) {
 									entities = tools.reduce(entities, function(newEntities, value, name) {
 										newEntities[name.replace(/[&;]/g, '')] = value.characters;
