@@ -1,8 +1,9 @@
+//! BEGIN_MODULE()
+
 //! REPLACE_BY("// Copyright 2016 Claude Petit, licensed under Apache License version 2.0\n", true)
-// dOOdad - Object-oriented programming framework
+// doodad-js - Object-oriented programming framework
 // File: Templates_Html.js - Templates module
-// Project home: https://sourceforge.net/projects/doodad-js/
-// Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
+// Project home: https://github.com/doodadjs/
 // Author: Claude Petit, Quebec city
 // Contact: doodadjs [at] gmail.com
 // Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !
@@ -23,26 +24,11 @@
 //	limitations under the License.
 //! END_REPLACE()
 
-(function() {
-	var global = this;
-
-	var exports = {};
-	
-	//! BEGIN_REMOVE()
-	if ((typeof process === 'object') && (typeof module === 'object')) {
-	//! END_REMOVE()
-		//! IF_DEF("serverSide")
-			module.exports = exports;
-		//! END_IF()
-	//! BEGIN_REMOVE()
-	};
-	//! END_REMOVE()
-	
-	exports.add = function add(DD_MODULES) {
+module.exports = {
+	add: function add(DD_MODULES) {
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['Doodad.Templates.Html'] = {
-			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE() */,
-			
+			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 			create: function create(root, /*optional*/_options, _shared) {
 				"use strict";
 				
@@ -65,7 +51,7 @@
 				
 				
 				var __Internal__ = {
-					templatesCached: {},
+					templatesCached: types.nullObject(),
 				};
 				
 				
@@ -75,7 +61,7 @@
 
 				types.freezeObject(__options__);
 
-				templatesHtml.getOptions = function() {
+				templatesHtml.getOptions = function getOptions() {
 					return __options__;
 				};
 
@@ -94,7 +80,7 @@
 						});
 					},
 					load: function load(path, /*optional*/options) {
-						return config.loadFile(path, { async: true, watch: true, encoding: 'utf-8' }, types.get(options, 'callback'));
+						return config.load(path, { async: true, watch: true, encoding: 'utf-8' }, types.get(options, 'callback'));
 					},
 				};
 				
@@ -111,10 +97,11 @@
 						request: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
 						__buffer: doodad.PROTECTED(null),
+						__renderPromise: doodad.PROTECTED(null),
 						
-						renderPromise: doodad.PUBLIC(null),
-						
-						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE()), // function(stream)
+						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE(function() {
+							return this.__renderPromise;
+						})),
 
 						$ddt: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
@@ -130,22 +117,23 @@
 							_shared.setAttribute(this, 'request', request);
 						}),
 						
-						render: doodad.OVERRIDE(function render(stream) {
+						render: doodad.OVERRIDE(function render() {
 							var Promise = types.getPromise();
-							this.renderPromise = Promise.resolve();
+
 							this.__buffer = '';
+							this.__renderPromise = Promise.resolve();
 							
-							this.renderTemplate(stream);
+							return this.renderTemplate();
 						}),
 						
 						asyncWrite: doodad.PROTECTED(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(function () {
+							this.__renderPromise = this.__renderPromise.then(function asyncWritePromise() {
 								this.__buffer += (code || '');
 								if (flush || (this.__buffer.length >= (1024 * 1024 * 10))) {  // TODO: Find the magic buffer length value
-									return Promise.create(function asyncWritePromise(resolve, reject) {
+									return Promise.create(function streamWritePromise(resolve, reject) {
 										this.stream.write(this.__buffer, {
-											callback: function (ex) {
+											callback: function streamWriteCallback(ex) {
 												if (ex) {
 													//console.log(ex);
 													reject(ex);
@@ -156,39 +144,37 @@
 										});
 										this.__buffer = '';
 									}, this);
-								} else {
-									return Promise.resolve();
 								};
 							}, null, this);
 						})),
 						
 						asyncForEach: doodad.PROTECTED(doodad.ASYNC(function asyncForEach(items, fn) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(function () {
-								this.renderPromise = Promise.resolve();
+							this.__renderPromise = this.__renderPromise.then(function asyncForEachPromise() {
+								this.__renderPromise = Promise.resolve();
 								tools.forEach(items, fn);
-								return this.renderPromise;
+								return this.__renderPromise;
 							}, null, this);
 						})),
 						
 						asyncInclude: doodad.PROTECTED(doodad.ASYNC(function asyncInclude(fn) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(function () {
-								this.renderPromise = Promise.resolve();
+							this.__renderPromise = this.__renderPromise.then(function asyncIncludePromise() {
+								this.__renderPromise = Promise.resolve();
 								fn();
-								return this.renderPromise;
+								return this.__renderPromise;
 							}, null, this);
 						})),
 						
 						asyncScript: doodad.PROTECTED(doodad.ASYNC(function asyncScript(fn) {
 							var Promise = types.getPromise();
-							this.renderPromise = this.renderPromise.then(function () {
-								this.renderPromise = Promise.resolve();
+							this.__renderPromise = this.__renderPromise.then(function asyncScriptPromise() {
+								this.__renderPromise = Promise.resolve();
 								var result = fn();
 								if (types.isPromise(result)) {
-									this.renderPromise = result;
+									this.__renderPromise = result;
 								};
-								return this.renderPromise;
+								return this.__renderPromise;
 							}, null, this);
 						})),
 					})));
@@ -210,7 +196,7 @@
 							} else {
 								ddi = templates[key] = new this(path, type, options);
 								
-								var deleteFn = function(key, ddi) {
+								var deleteFn = function _deleteFn(key, ddi) {
 									if (delete __Internal__.templatesCached[key]) {
 										tools.forEach(ddi.parents, function(key, ddi) {
 											deleteFn(key, ddi);
@@ -218,7 +204,7 @@
 									};
 								};
 
-								files.watch(path, new doodad.Callback(this, function() {
+								files.watch(path, new doodad.Callback(this, function watchFileCallback() {
 									deleteFn(key, ddi);
 								}), {once: true});
 								
@@ -258,6 +244,8 @@
 							return (function() {
 								// Flush buffer
 								page.asyncWrite(null, true);
+								
+								return this._super();
 							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						},
 						
@@ -288,8 +276,9 @@
 								};
 							};
 							
+							// TODO: Possible stack overflow (recursive function) : Rewrite in a while loop ?
 							var parseNode = function parseNode(node, state) {
-								node.getChildren().forEach(function(child, pos, ar) {
+								node.getChildren().forEach(function forEachChild(child, pos, ar) {
 									if (child instanceof xml.Element) {
 										var name = child.getName(),
 											ns = child.getBaseURI();
@@ -306,9 +295,9 @@
 											writeHTML(state);
 											writeAsyncWrites(state);
 											if ((!state.isIf) && (name === 'script')) {
-												var vars = (child.getAttr('vars') || '').split(' ').filter(function(e) {return !!e});
+												var vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
 												if (vars.length) {
-													self.codeParts.push('var ' + vars.join(', ') + ' = null;');
+													self.codeParts.push('var ' + vars.join(' = null, ') + ' = null;');
 												};
 												self.codeParts.push('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'for-each')) {
@@ -355,7 +344,7 @@
 											} else if ((!state.isIf) && (name === 'variable')) {
 												// TODO: Combine "variable" tags
 												// FUTURE: "let" but must check if already defined in scope
-												self.codeParts.push('var ' + child.getAttr('name') + ';');
+												self.codeParts.push('var ' + child.getAttr('name') + ' = null;');
 												self.codeParts.push('page.asyncScript(function() {' + child.getAttr('name') + ' = (' + child.getAttr('expr') + ')});');
 											} else if ((!state.isIf) && (name === 'include')) {
 												var path = child.getAttr('src');
@@ -365,6 +354,8 @@
 												state.promises.push(ddi.promise);
 												ddi.parents.set(self, parentPath.toString());
 												//console.log('SIZE ' + ddi.parents.size);
+											} else if ((!state.isIf) && (name === 'cache')) {
+												parseNode(child, state);
 											};
 										} else if ((!state.isIf) && (child.getName() === 'html') && (self.type === 'ddi')) {
 											parseNode(child, state);
@@ -375,7 +366,7 @@
 												state.hasCharset = true;
 											};
 											state.html += '<' + name;
-											child.getAttrs().forEach(function(attr) {
+											child.getAttrs().forEach(function forEachAttr(attr) {
 												var key = attr.getName(),
 													value = attr.getValue(),
 													ns = attr.getBaseURI();
@@ -445,15 +436,15 @@
 							this.parents = new types.Map();
 							var encoding = types.getDefault(this.options, 'encoding', 'utf-8');
 							this.promise = files.openFile(path, {encoding: encoding})
-								.then(function(stream) {
+								.then(function openFilePromise(stream) {
 									return xml.parse(stream, {discardEntities: true})
-										.then(function(doc) {
+										.then(function parseXmlPromise(doc) {
 											stream.destroy();
 											this.doc = doc;
 								//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
 											return this.parse(path)
-												.then(function() {
+												.then(function resultPromise() {
 													return this;
 												}, null, this);
 										}, null, this);
@@ -481,7 +472,7 @@
 										code += '\n' + newLevel + part;
 									};
 								};
-								return level + 'function ' + this.name + '(' + (writeHeader ? 'stream' : '') +') {' + 
+								return level + 'function ' + this.name + '() {' + 
 											'\n' + newLevel +
 											(writeHeader && this.getScriptHeader() || '') +
 											'\n' + code +
@@ -513,30 +504,30 @@
 							
 							var code;
 							
-							this.promise = this.promise.then(function() {
+							this.promise = this.promise.then(function extendDDTPromise() {
 								var ddtNode = this.doc.getRoot(),
 									name = ddtNode.getAttr('type');
 									
-									var type = namespaces.get(name);
-									
-									root.DD_ASSERT && root.DD_ASSERT(types._implements(type, templatesHtml.PageTemplate), "Unknown page template '~0~'.", [name])
-									
-									code = this.toString('', true);
-						//console.log(code);
-									var locals = this.getScriptVariables();
-									var fn = safeEval.createEval(types.keys(locals))
-									fn = fn.apply(null, types.values(locals));
-									fn = fn('(' + code + ')');
-						//console.log(fn);
+								var type = namespaces.get(name);
+								
+								root.DD_ASSERT && root.DD_ASSERT(types._implements(type, templatesHtml.PageTemplate), "Unknown page template '~0~'.", [name])
+								
+								code = this.toString('', true);
+					//console.log(code);
+								var locals = this.getScriptVariables();
+								var fn = safeEval.createEval(types.keys(locals))
+								fn = fn.apply(null, types.values(locals));
+								fn = fn('(' + code + ')');
+					//console.log(fn);
 
-									return types.INIT(type.$extend(
-									{
-										$TYPE_NAME: '__' + type.$TYPE_NAME,
-										
-										renderTemplate: doodad.OVERRIDE(fn),
-									}), [this]);
+								return types.INIT(type.$extend(
+								{
+									$TYPE_NAME: '__' + type.$TYPE_NAME,
+									
+									renderTemplate: doodad.OVERRIDE(fn),
+								}), [null, null, null, this]);
 							}, null, this)
-							['catch'](function (err) {
+							['catch'](function catchExtendDDTPromise(err) {
 								console.log(code);
 								throw err;
 							});
@@ -561,8 +552,8 @@
 				//===================================
 				return function init(/*optional*/options) {
 					return __Internal__.resourcesLoader.locate('./schemas/html5/entities.json')
-						.then(function(location) {
-							return __Internal__.resourcesLoader.load(location, {callback: function(err, entities) {
+						.then(function loadXmlEntitiesPromise(location) {
+							return __Internal__.resourcesLoader.load(location, {callback: function parseXmlEntritiesCallback(err, entities) {
 								if (!err) {
 									entities = tools.reduce(entities, function(newEntities, value, name) {
 										newEntities[name.replace(/[&;]/g, '')] = value.characters;
@@ -575,27 +566,7 @@
 				};
 			},
 		};
-		
 		return DD_MODULES;
-	};
-	
-	//! BEGIN_REMOVE()
-	if ((typeof process !== 'object') || (typeof module !== 'object')) {
-	//! END_REMOVE()
-		//! IF_UNDEF("serverSide")
-			// <PRB> export/import are not yet supported in browsers
-			global.DD_MODULES = exports.add(global.DD_MODULES);
-		//! END_IF()
-	//! BEGIN_REMOVE()
-	};
-	//! END_REMOVE()
-}).call(
-	//! BEGIN_REMOVE()
-	(typeof window !== 'undefined') ? window : ((typeof global !== 'undefined') ? global : this)
-	//! END_REMOVE()
-	//! IF_DEF("serverSide")
-	//! 	INJECT("global")
-	//! ELSE()
-	//! 	INJECT("window")
-	//! END_IF()
-);
+	},
+};
+//! END_MODULE()

@@ -5,9 +5,9 @@
 	targetNamespace="http://www.doodad-js.local/schemas/html5">
 	<!--
 
-	 dOOdad - Object-oriented programming framework
+	 doodad-js  -  Object-oriented programming framework
 	 File: html5_ddt.xsd- HTML5+DDT schema file
-	 Project home: https://sourceforge.net/projects/doodad-js/
+	 Project home: https://github.com/doodadjs/
 	 Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
 	 Author: Claude Petit, Quebec city
 	 Contact: doodadjs [at] gmail.com

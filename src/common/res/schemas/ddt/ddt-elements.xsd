@@ -6,9 +6,9 @@
 
 
 	<!--
-	 dOOdad - Object-oriented programming framework
+	 doodad-js  -  Object-oriented programming framework
 	 File: ddt-elements.xsd - DDT elements schema file
-	 Project home: https://sourceforge.net/projects/doodad-js/
+	 Project home: https://github.com/doodadjs/
 	 Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
 	 Author: Claude Petit, Quebec city
 	 Contact: doodadjs [at] gmail.com
@@ -112,4 +112,15 @@
 			<xs:attribute name="expr" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
+
+  <xs:element name="cache">
+    <xs:complexType>
+      <xs:sequence maxOccurs="1">
+        <xs:any namespace="##any" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required"/>
+      <xs:attribute name="expiration" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
 </xs:schema>
