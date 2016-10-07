@@ -46,6 +46,7 @@
 				<xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
 			</xs:sequence>
 			<xs:attribute name="type" type="xs:string" use="required"/>
+			<xs:attribute name="cache" type="xs:boolean" default="true"/>
 		</xs:complexType>
     </xs:element>
 

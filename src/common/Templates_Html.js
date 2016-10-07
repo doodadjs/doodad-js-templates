@@ -47,7 +47,8 @@ module.exports = {
 					widgets = doodad.Widgets,
 					xml = tools.Xml,
 					templates = doodad.Templates,
-					templatesHtml = templates.Html;
+					templatesHtml = templates.Html,
+					io = doodad.IO;
 				
 				
 				var __Internal__ = {
@@ -98,6 +99,8 @@ module.exports = {
 						
 						__buffer: doodad.PROTECTED(null),
 						__renderPromise: doodad.PROTECTED(null),
+						__cacheStream: doodad.PROTECTED(null),
+						__cacheHandler: doodad.PROTECTED(null),
 						
 						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE(function() {
 							return this.__renderPromise;
@@ -111,9 +114,16 @@ module.exports = {
 							_shared.setAttribute(this, '$ddt', ddt);
 						}),
 
-						create: doodad.OVERRIDE(function create(request) {
+						create: doodad.OVERRIDE(function create(request, cacheHandler) {
 							this._super();
 							
+							this.__cacheHandler = cacheHandler;
+	
+							var type = types.getType(this);
+							if (!type.$ddt.cache) {
+								cacheHandler.getCached(request).disabled = true;
+							};
+
 							_shared.setAttribute(this, 'request', request);
 						}),
 						
@@ -122,29 +132,32 @@ module.exports = {
 
 							this.__buffer = '';
 							this.__renderPromise = Promise.resolve();
+							this.__cacheStream = null;
 							
 							return this.renderTemplate();
 						}),
+
+						__asyncWrite: doodad.PROTECTED(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
+								this.__buffer += (code || '');
+								if (flush || (this.__buffer.length >= (1024 * 1024 * 1))) {  // TODO: Add an option in DDT for max buffer length
+									var buffer = this.__buffer;
+									this.__buffer = '';
+									return this.stream.writeAsync(buffer)
+										.then(function() {
+											if (this.__cacheStream) {
+												return this.__cacheStream.writeAsync(buffer);
+											};
+										}, null, this);
+										//.catch(function(err) {
+										//	debugger;
+										//});
+								};
+						})),
 						
 						asyncWrite: doodad.PROTECTED(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
 							var Promise = types.getPromise();
 							this.__renderPromise = this.__renderPromise.then(function asyncWritePromise() {
-								this.__buffer += (code || '');
-								if (flush || (this.__buffer.length >= (1024 * 1024 * 10))) {  // TODO: Find the magic buffer length value
-									return Promise.create(function streamWritePromise(resolve, reject) {
-										this.stream.write(this.__buffer, {
-											callback: function streamWriteCallback(ex) {
-												if (ex) {
-													//console.log(ex);
-													reject(ex);
-												} else {
-													resolve();
-												};
-											}
-										});
-										this.__buffer = '';
-									}, this);
-								};
+								return this.__asyncWrite(code, flush);
 							}, null, this);
 						})),
 						
@@ -177,6 +190,59 @@ module.exports = {
 								return this.__renderPromise;
 							}, null, this);
 						})),
+
+						asyncStartCache: doodad.PROTECTED(doodad.ASYNC(function asyncStartCache(id) {
+							var Promise = types.getPromise();
+							var type = types.getType(this);
+							var start = function start() {
+								var cached = this.__cacheHandler.getCached(this.request, {section: id});
+								if (!cached.disabled && cached.ready) {
+									return this.__cacheHandler.openFile(this.request, cached)
+										.then(function(cacheStream) {
+											if (cacheStream) {
+												cacheStream.pipe(this.stream, {end: false});
+												cacheStream.flush();
+											} else {
+												return start.call(this); // cache file has been deleted
+											};
+										}, null, this);
+								} else if (!cached.disabled && !cached.writing) {
+									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding})
+										.then(function(cacheStream) {
+											this.__cacheStream = cacheStream;
+										}, null, this);
+								};
+							};
+							this.__renderPromise = this.__renderPromise.then(function asyncIncludePromise() {
+								return this.__asyncWrite(null, true)
+									.then(start, null, this);
+							}, null, this);
+						})),
+						
+						asyncStopCache: doodad.PROTECTED(doodad.ASYNC(function asyncStopCache(id) {
+							var Promise = types.getPromise();
+							this.__renderPromise = this.__renderPromise.then(function asyncIncludePromise() {
+								if (this.__cacheStream) {
+									return this.__asyncWrite(null, true)
+										.then(function(result) {
+											var cached = this.__cacheHandler.getCached(this.request, {section: id});
+											var cache = this.__cacheStream;
+											this.__cacheStream = null;
+											return cache.writeAsync(io.EOF)
+												.then(function outputOnEOF(ev) {
+													cached.writing = false;
+													cached.ready = !cached.aborted;
+												}, this)
+												.catch(function(err) {
+													cached.aborted = true;
+													cached.writing = false;
+													throw err;
+												}, this);
+										}, null, this)
+								};
+							}, null, this);
+						})),
+						
 					})));
 				
 				
@@ -223,6 +289,7 @@ module.exports = {
 						promise: null,
 						codeParts: null,
 						parents: null,
+						cache: true,
 						
 						getScriptVariables: function getScriptVariables() {
 							return {
@@ -253,6 +320,7 @@ module.exports = {
 							// TODO: ES7 (async/await) when widely supported (both in all supported browsers & nodejs)
 							
 							var DDT_URI = "http://www.doodad-js.local/schemas/ddt"
+							var HTML_URI = "http://www.doodad-js.local/schemas/html5"
 							
 							var doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
 							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
@@ -261,6 +329,8 @@ module.exports = {
 
 							var ddi = this.doc.getRoot(),
 								self = this;
+
+							var cache = types.toBoolean(ddi.getAttr('cache') || 'true');
 
 							var writeHTML = function writeHTML(state) {
 								if (state.html) {
@@ -271,12 +341,15 @@ module.exports = {
 							
 							var writeAsyncWrites = function writeAsyncWrites(state) {
 								if (state.writes) {
-									self.codeParts.push('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
+									self.codeParts[self.codeParts.length] = ('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
 									state.writes = '';
 								};
 							};
 							
-							// TODO: Possible stack overflow (recursive function) : Rewrite in a while loop ?
+							// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
+							// TODO: More XML validation
+							// TODO: Throw XML validation errors
+							// TODO: Validation by XSL ?
 							var parseNode = function parseNode(node, state) {
 								node.getChildren().forEach(function forEachChild(child, pos, ar) {
 									if (child instanceof xml.Element) {
@@ -294,115 +367,122 @@ module.exports = {
 										if (ns === DDT_URI) {
 											writeHTML(state);
 											writeAsyncWrites(state);
-											if ((!state.isIf) && (name === 'script')) {
+											if ((!state.isIf) && (name === 'script') && child.getChildren().getAt(0)) {
 												var vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
 												if (vars.length) {
-													self.codeParts.push('var ' + vars.join(' = null, ') + ' = null;');
+													self.codeParts[self.codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 												};
-												self.codeParts.push('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
-											} else if ((!state.isIf) && (name === 'for-each')) {
-												self.codeParts.push('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', function(' + (child.getAttr('item') || 'item') + ') {');
+												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
+											} else if ((!state.isIf) && (name === 'for-each') && child.hasAttr('items') && child.hasAttr('item')) {
+												self.codeParts[self.codeParts.length] = ('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', function(' + (child.getAttr('item') || 'item') + ') {');
 												parseNode(child, state);
 												writeHTML(state);
 												writeAsyncWrites(state);
-												self.codeParts.push('});');
-											} else if ((!state.isIf) && (name === 'eval')) {
-												self.codeParts.push('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
-											} else if ((!state.isIf) && (name === 'if') && (state.expr = child.getAttr('expr'))) {
-												self.codeParts.push('page.asyncScript(function() {var __expr__ = !!(' + state.expr + ');');
+												self.codeParts[self.codeParts.length] = ('});');
+											} else if ((!state.isIf) && (name === 'eval') && child.getChildren().getAt(0)) {
+												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
+											} else if ((!state.isIf) && (name === 'if') && child.hasAttr('expr')) {
+												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
 												var newState = types.extend({}, state, {isIf: true});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												self.codeParts.push('});');
-											} else if (name === 'when-true') {
+												self.codeParts[self.codeParts.length] = ('});');
+											} else if (name === 'when-true' && child.hasAttr('expr')) {
 												if (!state.isIf) {
-													self.codeParts.push('page.asyncScript(function() {var __expr__ = !!(' + child.getAttr('expr') + ');');
+													self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {var __expr__ = !!(' + child.getAttr('expr') + ');');
 												};
-												self.codeParts.push('if (__expr__) {');
+												self.codeParts[self.codeParts.length] = ('if (__expr__) {');
 												var newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												self.codeParts.push('};');
+												self.codeParts[self.codeParts.length] = ('};');
 												if (!state.isIf) {
-													self.codeParts.push('});');
+													self.codeParts[self.codeParts.length] = ('});');
 												};
-											} else if (name === 'when-false') {
+											} else if (name === 'when-false' && child.hasAttr('expr')) {
 												if (!state.isIf) {
-													self.codeParts.push('page.asyncScript(function() {var __expr__ = !!(' + child.getAttr('expr') + ');');
+													self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {var __expr__ = !!(' + child.getAttr('expr') + ');');
 												};
-												self.codeParts.push('if (!__expr__) {');
+												self.codeParts[self.codeParts.length] = ('if (!__expr__) {');
 												var newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												self.codeParts.push('};');
+												self.codeParts[self.codeParts.length] = ('};');
 												if (!state.isIf) {
-													self.codeParts.push('});');
+													self.codeParts[self.codeParts.length] = ('});');
 												};
-											} else if ((!state.isIf) && (name === 'variable')) {
+											} else if ((!state.isIf) && (name === 'variable') && child.hasAttr('name') && child.hasAttr('expr')) {
 												// TODO: Combine "variable" tags
 												// FUTURE: "let" but must check if already defined in scope
-												self.codeParts.push('var ' + child.getAttr('name') + ' = null;');
-												self.codeParts.push('page.asyncScript(function() {' + child.getAttr('name') + ' = (' + child.getAttr('expr') + ')});');
-											} else if ((!state.isIf) && (name === 'include')) {
+												var name = (child.getAttr('name') || 'x');
+												self.codeParts[self.codeParts.length] = ('var ' + name + ' = null;');
+												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
+											} else if ((!state.isIf) && (name === 'include') && child.hasAttr('src')) {
 												var path = child.getAttr('src');
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
 												var ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
-												self.codeParts.push(ddi);
-												state.promises.push(ddi.promise);
+												self.codeParts[self.codeParts.length] = (ddi);
+												state.promises[state.promises.length] = (ddi.promise);
 												ddi.parents.set(self, parentPath.toString());
-												//console.log('SIZE ' + ddi.parents.size);
-											} else if ((!state.isIf) && (name === 'cache')) {
+											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
+												state.cacheId = child.getAttr('id');
+												self.codeParts[self.codeParts.length] = ('page.asyncStartCache(' + types.toSource(state.cacheId) + ');');
 												parseNode(child, state);
+												self.codeParts[self.codeParts.length] = ('page.asyncStopCache(' + types.toSource(state.cacheId) + ');');
+												state.cacheId = null;
+												cache = false; // don't enable cache on DDT
 											};
-										} else if ((!state.isIf) && (child.getName() === 'html') && (self.type === 'ddi')) {
-											parseNode(child, state);
-										} else if (!state.isIf) {
-											if (name === 'head') {
-												state.isHead = true;
-											} else if (state.isHead && (child.getName() === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
-												state.hasCharset = true;
-											};
-											state.html += '<' + name;
-											child.getAttrs().forEach(function forEachAttr(attr) {
-												var key = attr.getName(),
-													value = attr.getValue(),
-													ns = attr.getBaseURI();
-												state.html += ' ' + key + '="';
-												if (ns === DDT_URI) {
-													writeHTML(state);
-													writeAsyncWrites(state);
-													self.codeParts.push('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + value + ') + ""))});'); // CDATA or Text
-												} else {
-													state.html += value;
+										} else if (ns === HTML_URI) {
+											if ((!state.isIf) && (child.getName() === 'html') && (self.type === 'ddi')) {
+												parseNode(child, state);
+											} else if (!state.isIf) {
+												if (name === 'head') {
+													state.isHead = true;
+												} else if (state.isHead && (child.getName() === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
+													state.hasCharset = true;
 												};
-												state.html += '"';
-											}, this);
-											// <PRB> Browsers do not well support "<name />"
-											var hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
-											if (hasChildren) {
-												state.html += '>';
-											};
-											parseNode(child, state);
-											if ((name === 'head') && !state.hasCharset) {
-												state.html += '<meta charset="UTF-8"/>';
-												state.hasCharset = true;
-											};
-											if (hasChildren) {
-												state.html += '</' + name + '>';
-											} else {
-												state.html += '/>';
-											};
-											if (name === 'head') {
-												state.isHead = false;
+												state.html += '<' + name;
+												child.getAttrs().forEach(function forEachAttr(attr) {
+													var key = attr.getName(),
+														value = attr.getValue(),
+														ns = attr.getBaseURI();
+													state.html += ' ' + key + '="';
+													if (ns === DDT_URI) {
+														writeHTML(state);
+														writeAsyncWrites(state);
+														self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + value + ') + ""))});'); // CDATA or Text
+													} else {
+														state.html += value;
+													};
+													state.html += '"';
+												}, this);
+												// <PRB> Browsers do not well support "<name />"
+												var hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
+												if (hasChildren) {
+													state.html += '>';
+												};
+												parseNode(child, state);
+												if ((name === 'head') && !state.hasCharset) {
+													state.html += '<meta charset="UTF-8"/>';
+													state.hasCharset = true;
+												};
+												if (hasChildren) {
+													state.html += '</' + name + '>';
+												} else {
+													state.html += '/>';
+												};
+												if (name === 'head') {
+													state.isHead = false;
+												};
 											};
 										};
 									} else if ((!state.isIf) && (child instanceof xml.Text)) {
-										state.html += child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' ');
+										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
 									} else if ((!state.isIf) && (child instanceof xml.CDATASection)) {
-										state.html += '<![CDATA[' + child.getValue() + ']]';
+										state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
 									};
 								}, this);
 							};
@@ -413,15 +493,17 @@ module.exports = {
 								isHead: false,
 								html: '',
 								writes: '',
-								expr: '',
 								isIf: false,
 								promises: [],
+								cacheId: null,
 							};
 							
 							parseNode(ddi, state);
 							writeHTML(state);
 							writeAsyncWrites(state);
 							
+							self.cache = cache;
+
 							var Promise = types.getPromise();
 							return Promise.all(state.promises);
 						}),
@@ -497,8 +579,6 @@ module.exports = {
 					},
 					/*instanceProto*/
 					{
-						pageType: null,
-						
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super(path, type, options);
 							
