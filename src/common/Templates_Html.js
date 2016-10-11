@@ -120,9 +120,10 @@ module.exports = {
 							this.__cacheHandler = cacheHandler;
 	
 							var type = types.getType(this);
-							if (!type.$ddt.cache) {
-								cacheHandler.getCached(request).disabled = true;
-							};
+
+							var cached = cacheHandler.getCached(request)
+							cached.disabled = !type.$ddt.cache;
+							cached.duration = type.$ddt.cacheDuration;
 
 							_shared.setAttribute(this, 'request', request);
 						}),
@@ -191,25 +192,45 @@ module.exports = {
 							}, null, this);
 						})),
 
-						asyncStartCache: doodad.PROTECTED(doodad.ASYNC(function asyncStartCache(id) {
+						asyncCache: doodad.PROTECTED(doodad.ASYNC(function asyncStartCache(id, duration, fn) {
 							var Promise = types.getPromise();
 							var type = types.getType(this);
 							var start = function start() {
 								var cached = this.__cacheHandler.getCached(this.request, {section: id});
-								if (!cached.disabled && cached.ready) {
+								if (cached.isValid()) {
 									return this.__cacheHandler.openFile(this.request, cached)
 										.then(function(cacheStream) {
 											if (cacheStream) {
+												var promise = cacheStream.onEOF.promise();
 												cacheStream.pipe(this.stream, {end: false});
-												cacheStream.flush();
+												cacheStream.flush({output: false});
+												return promise;
 											} else {
 												return start.call(this); // cache file has been deleted
 											};
 										}, null, this);
-								} else if (!cached.disabled && !cached.writing) {
-									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding})
+								} else if (cached.isInvalid()) {
+									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding, duration: duration})
 										.then(function(cacheStream) {
 											this.__cacheStream = cacheStream;
+											this.__renderPromise = Promise.resolve();
+											fn();
+											return this.__renderPromise
+												.then(function() {
+													return this.__asyncWrite(null, true);
+												}, null, this)
+												.then(function() {
+													this.__cacheStream = null;
+													return cacheStream.writeAsync(io.EOF);
+												}, null, this)
+												.then(function outputOnEOF(ev) {
+													cached.validate();
+												}, null, this)
+												.catch(function(err) {
+													cacheStream.write(io.EOF);
+													cached.abort();
+													throw err;
+												}, this);
 										}, null, this);
 								};
 							};
@@ -218,31 +239,6 @@ module.exports = {
 									.then(start, null, this);
 							}, null, this);
 						})),
-						
-						asyncStopCache: doodad.PROTECTED(doodad.ASYNC(function asyncStopCache(id) {
-							var Promise = types.getPromise();
-							this.__renderPromise = this.__renderPromise.then(function asyncIncludePromise() {
-								if (this.__cacheStream) {
-									return this.__asyncWrite(null, true)
-										.then(function(result) {
-											var cached = this.__cacheHandler.getCached(this.request, {section: id});
-											var cache = this.__cacheStream;
-											this.__cacheStream = null;
-											return cache.writeAsync(io.EOF)
-												.then(function outputOnEOF(ev) {
-													cached.writing = false;
-													cached.ready = !cached.aborted;
-												}, this)
-												.catch(function(err) {
-													cached.aborted = true;
-													cached.writing = false;
-													throw err;
-												}, this);
-										}, null, this)
-								};
-							}, null, this);
-						})),
-						
 					})));
 				
 				
@@ -270,9 +266,9 @@ module.exports = {
 									};
 								};
 
-								files.watch(path, new doodad.Callback(this, function watchFileCallback() {
+								files.watch(path, function watchFileCallback() {
 									deleteFn(key, ddi);
-								}), {once: true});
+								}, {once: true});
 								
 							};
 							
@@ -290,6 +286,7 @@ module.exports = {
 						codeParts: null,
 						parents: null,
 						cache: true,
+						cacheDuration: null,
 						
 						getScriptVariables: function getScriptVariables() {
 							return {
@@ -330,7 +327,12 @@ module.exports = {
 							var ddi = this.doc.getRoot(),
 								self = this;
 
-							var cache = types.toBoolean(ddi.getAttr('cache') || 'true');
+							var cache = false;
+							var cacheDuration = null;
+							if (self.type === 'ddt') {
+								cache = types.toBoolean((self.type === 'ddt') && ddi.getAttr('cache') || 'false');
+								cacheDuration = ddi.getAttr('cacheDuration');
+							};
 
 							var writeHTML = function writeHTML(state) {
 								if (state.html) {
@@ -429,11 +431,13 @@ module.exports = {
 												ddi.parents.set(self, parentPath.toString());
 											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
 												state.cacheId = child.getAttr('id');
-												self.codeParts[self.codeParts.length] = ('page.asyncStartCache(' + types.toSource(state.cacheId) + ');');
+												var duration = child.getAttr("duration");
+												self.codeParts[self.codeParts.length] = 'page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', function() {';
 												parseNode(child, state);
-												self.codeParts[self.codeParts.length] = ('page.asyncStopCache(' + types.toSource(state.cacheId) + ');');
+												writeHTML(state);
+												writeAsyncWrites(state);
+												self.codeParts[self.codeParts.length] = '});';
 												state.cacheId = null;
-												cache = false; // don't enable cache on DDT
 											};
 										} else if (ns === HTML_URI) {
 											if ((!state.isIf) && (child.getName() === 'html') && (self.type === 'ddi')) {
@@ -503,6 +507,7 @@ module.exports = {
 							writeAsyncWrites(state);
 							
 							self.cache = cache;
+							self.cacheDuration = cacheDuration;
 
 							var Promise = types.getPromise();
 							return Promise.all(state.promises);

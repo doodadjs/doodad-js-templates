@@ -119,7 +119,7 @@
         <xs:any namespace="##any" maxOccurs="unbounded"/>
       </xs:sequence>
       <xs:attribute name="id" type="xs:string" use="required"/>
-      <xs:attribute name="expiration" type="xs:string"/>
+      <xs:attribute name="duration" type="xs:string"/>
     </xs:complexType>
   </xs:element>
 
