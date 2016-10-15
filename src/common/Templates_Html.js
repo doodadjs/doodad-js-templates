@@ -165,9 +165,12 @@ module.exports = {
 						asyncForEach: doodad.PROTECTED(doodad.ASYNC(function asyncForEach(items, fn) {
 							var Promise = types.getPromise();
 							this.__renderPromise = this.__renderPromise.then(function asyncForEachPromise() {
-								this.__renderPromise = Promise.resolve();
-								tools.forEach(items, fn);
-								return this.__renderPromise;
+								return Promise.resolve(items) // Items can be a Promise or a value
+									.then(function(items) {
+										this.__renderPromise = Promise.resolve();
+										tools.forEach(items, fn);
+										return this.__renderPromise;
+									}, null, this);
 							}, null, this);
 						})),
 						
