@@ -30,52 +30,6 @@ NOTE: HTML version 4.x and lower versions are not supported because they almost 
 
 NOTE: I'm waiting for more elaborated DTD and XSD files from " http://www.html5dtd.org/ ". But the author seems very busy.
 
-
-## Quick Start
-
-By default, Doodad is running in production mode, which disables every validations. You may want to activate the development mode by setting the "NODE_ENV" environment variable :
-
-Windows :
-```dos
-    set NODE_ENV=development
-```
-Linux :
-```bash
-    export NODE_ENV=development
-```
-Now create the root namespace :
-```js
-    const root = require('doodad-js').createRoot();
-```
-
-You can create a shortcut to the namespaces this way :
-```js
-    const doodad = root.Doodad,
-        types = doodad.Types,
-        tools = doodad.Tools,
-        mixins = doodad.MixIns,
-        interfaces = doodad.Interfaces,
-        extenders = doodad.Extenders,
-        namespaces = doodad.Namespaces,
-        ... ;
-```
-
-Then load 'doodad-js-templates' and its dependencies :
-```js
-    const modules = {};
-	require('doodad-js-io').add(modules);
-	require('doodad-js-xml').add(modules);
-	require('doodad-js-widgets').add(modules);
-	require('doodad-js-safeeval').add(modules);
-	require('doodad-js-templates').add(modules);
-    
-    function startup() {
-		// Your code here...
-    };
-    
-    namespaces.load(modules, startup);
-```
-
 ## Example
 
 Please install "doodad-js-test" and browse its source code. Begin by "./src/server/res/templates/Folder.ddt" in package "doodad-js-http". It is an XML file.
