@@ -89,8 +89,6 @@ module.exports = {
 					__Internal__.resourcesLoader = loader;
 				};
 
-				
-				
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
 						$TYPE_NAME: 'PageTemplate',
@@ -98,13 +96,10 @@ module.exports = {
 						request: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
 						__buffer: doodad.PROTECTED(null),
-						__renderPromise: doodad.PROTECTED(null),
 						__cacheStream: doodad.PROTECTED(null),
 						__cacheHandler: doodad.PROTECTED(null),
 						
-						renderTemplate: doodad.PROTECTED(doodad.MUST_OVERRIDE(function() {
-							return this.__renderPromise;
-						})),
+						renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),
 
 						$ddt: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
@@ -132,70 +127,58 @@ module.exports = {
 							var Promise = types.getPromise();
 
 							this.__buffer = '';
-							this.__renderPromise = Promise.resolve();
 							this.__cacheStream = null;
 							
-							return this.renderTemplate();
+							return this.renderTemplate()
+								.then(function() {
+									// Flush buffer
+									return this.asyncWrite(null, true);
+								}, null, this);
 						}),
 
-						__asyncWrite: doodad.PROTECTED(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
-								this.__buffer += (code || '');
-								if (flush || (this.__buffer.length >= (1024 * 1024 * 1))) {  // TODO: Add an option in DDT for max buffer length
-									var buffer = this.__buffer;
-									this.__buffer = '';
-									return this.stream.writeAsync(buffer)
-										.then(function() {
-											if (this.__cacheStream) {
-												return this.__cacheStream.writeAsync(buffer);
-											};
-										}, null, this);
-										//.catch(function(err) {
-										//	debugger;
-										//});
-								};
-						})),
-						
-						asyncWrite: doodad.PROTECTED(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
-							var Promise = types.getPromise();
-							this.__renderPromise = this.__renderPromise.then(function asyncWritePromise() {
-								return this.__asyncWrite(code, flush);
-							}, null, this);
-						})),
-						
-						asyncForEach: doodad.PROTECTED(doodad.ASYNC(function asyncForEach(items, fn) {
-							var Promise = types.getPromise();
-							this.__renderPromise = this.__renderPromise.then(function asyncForEachPromise() {
-								return Promise.resolve(items) // Items can be a Promise or a value
-									.then(function(items) {
-										this.__renderPromise = Promise.resolve();
-										tools.forEach(items, fn);
-										return this.__renderPromise;
+						// <PRB> Because of async/await, must be PUBLIC.
+						asyncWrite: doodad.PUBLIC(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
+							this.__buffer += (code || '');
+							if (flush || (this.__buffer.length >= (1024 * 1024 * 1))) {  // TODO: Add an option in DDT for max buffer length
+								var buffer = this.__buffer;
+								this.__buffer = '';
+								return this.stream.writeAsync(buffer)
+									.then(function() {
+										if (this.__cacheStream) {
+											return this.__cacheStream.writeAsync(buffer);
+										};
 									}, null, this);
-							}, null, this);
+									//.catch(function(err) {
+									//	debugger;
+									//});
+							};
 						})),
 						
-						asyncInclude: doodad.PROTECTED(doodad.ASYNC(function asyncInclude(fn) {
+						// <PRB> Because of async/await, must be PUBLIC.
+						asyncForEach: doodad.PUBLIC(doodad.ASYNC(function asyncForEach(items, fn) {
 							var Promise = types.getPromise();
-							this.__renderPromise = this.__renderPromise.then(function asyncIncludePromise() {
-								this.__renderPromise = Promise.resolve();
-								fn();
-								return this.__renderPromise;
-							}, null, this);
+							return Promise.resolve(items) // Items can be a Promise or a value
+								.then(function(items) {
+									return Promise.map(items, fn, {concurrency: 1, thisObj: this});
+								}, null, this);
 						})),
 						
-						asyncScript: doodad.PROTECTED(doodad.ASYNC(function asyncScript(fn) {
+						// <PRB> Because of async/await, must be PUBLIC.
+						asyncInclude: doodad.PUBLIC(doodad.ASYNC(function asyncInclude(fn) {
+							// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
 							var Promise = types.getPromise();
-							this.__renderPromise = this.__renderPromise.then(function asyncScriptPromise() {
-								this.__renderPromise = Promise.resolve();
-								var result = fn();
-								if (types.isPromise(result)) {
-									this.__renderPromise = result;
-								};
-								return this.__renderPromise;
-							}, null, this);
+							return Promise.resolve(fn.call(this));
+						})),
+						
+						// <PRB> Because of async/await, must be PUBLIC.
+						asyncScript: doodad.PUBLIC(doodad.ASYNC(function asyncScript(fn) {
+							// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
+							var Promise = types.getPromise();
+							return Promise.resolve(fn.call(this));
 						})),
 
-						asyncCache: doodad.PROTECTED(doodad.ASYNC(function asyncStartCache(id, duration, fn) {
+						// <PRB> Because of async/await, must be PUBLIC.
+						asyncCache: doodad.PUBLIC(doodad.ASYNC(function asyncStartCache(id, duration, fn) {
 							var Promise = types.getPromise();
 							var type = types.getType(this);
 							var start = function start() {
@@ -206,7 +189,7 @@ module.exports = {
 											if (cacheStream) {
 												var promise = cacheStream.onEOF.promise();
 												cacheStream.pipe(this.stream, {end: false});
-												cacheStream.flush({output: false});
+												cacheStream.flush();
 												return promise;
 											} else {
 												return start.call(this); // cache file has been deleted
@@ -216,11 +199,10 @@ module.exports = {
 									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding, duration: duration})
 										.then(function(cacheStream) {
 											this.__cacheStream = cacheStream;
-											this.__renderPromise = Promise.resolve();
-											fn();
-											return this.__renderPromise
+											// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
+											return Promise.resolve(fn.call(this))
 												.then(function() {
-													return this.__asyncWrite(null, true);
+													return this.asyncWrite(null, true);
 												}, null, this)
 												.then(function() {
 													this.__cacheStream = null;
@@ -237,14 +219,18 @@ module.exports = {
 										}, null, this);
 								};
 							};
-							this.__renderPromise = this.__renderPromise.then(function asyncIncludePromise() {
-								return this.__asyncWrite(null, true)
-									.then(start, null, this);
-							}, null, this);
+							return this.asyncWrite(null, true)
+								.then(start, null, this);
 						})),
 					})));
 				
 				
+				var hasAsyncAwait = types.supportsAsyncAwait();
+
+				__Internal__.surroundAsync = function surroundAsync(code) {
+					return (hasAsyncAwait ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
+				};
+
 				templatesHtml.DDI = types.INIT(types.Type.$inherit(
 					/*typeProto*/
 					{
@@ -308,12 +294,9 @@ module.exports = {
 						
 						getScriptFooter: function getScriptFooter() {
 							// NOTE: Returns the footer of the "renderTemplate" function
-							return (function() {
-								// Flush buffer
-								page.asyncWrite(null, true);
-								
-								return this._super();
-							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
+							//return (function() {
+							//}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
+							return "";
 						},
 						
 						parse: doodad.ASYNC(function parse(parentPath) {
@@ -344,9 +327,51 @@ module.exports = {
 								};
 							};
 							
+							var fnHeader = function fnHeader() {
+								if (!hasAsyncAwait) {
+									self.codeParts[self.codeParts.length] = 'var pagePromise = Promise.resolve();';
+								};
+							};
+
+							var startFn = function startFn(/*optional*/args) {
+								if (hasAsyncAwait) {
+									self.codeParts[self.codeParts.length] = '(async function(' + (args || '') + ') {';
+								} else {
+									self.codeParts[self.codeParts.length] = '(function(' + (args || '') + ') {';
+								};
+								fnHeader();
+							};
+
+							var startAsync = function startAsync(code) {
+								if (hasAsyncAwait) {
+									return 'await ' + code;
+								} else {
+									return 'pagePromise = pagePromise.then(function() {return ' + code;
+								};
+							};
+
+							var endAsync = function endAsync(/*optional*/code) {
+								if (hasAsyncAwait) {
+									return (code || '');
+								} else {
+									return (code || '') + '}, null, this);';
+								};
+							};
+
+							var fnFooter = function fnFooter() {
+								if (!hasAsyncAwait) {
+									self.codeParts[self.codeParts.length] = 'return pagePromise;';
+								};
+							};
+
+							var endFn = function endFn() {
+								fnFooter();
+								self.codeParts[self.codeParts.length] = '})';
+							};
+
 							var writeAsyncWrites = function writeAsyncWrites(state) {
 								if (state.writes) {
-									self.codeParts[self.codeParts.length] = ('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
+									self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
 									state.writes = '';
 								};
 							};
@@ -355,6 +380,7 @@ module.exports = {
 							// TODO: More XML validation
 							// TODO: Throw XML validation errors
 							// TODO: Validation by XSL ?
+
 							var parseNode = function parseNode(node, state) {
 								node.getChildren().forEach(function forEachChild(child, pos, ar) {
 									if (child instanceof xml.Element) {
@@ -377,26 +403,33 @@ module.exports = {
 												if (vars.length) {
 													self.codeParts[self.codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 												};
-												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
+												self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'for-each') && child.hasAttr('items') && child.hasAttr('item')) {
-												self.codeParts[self.codeParts.length] = ('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', function(' + (child.getAttr('item') || 'item') + ') {');
+												self.codeParts[self.codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
+												startFn(child.getAttr('item') || 'item');
 												parseNode(child, state);
 												writeHTML(state);
 												writeAsyncWrites(state);
-												self.codeParts[self.codeParts.length] = ('});');
+												endFn();
+												self.codeParts[self.codeParts.length] = endAsync(');');
 											} else if ((!state.isIf) && (name === 'eval') && child.getChildren().getAt(0)) {
-												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
+												self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'if') && child.hasAttr('expr')) {
-												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
+												self.codeParts[self.codeParts.length] = startAsync('page.asyncScript(');
 												var newState = types.extend({}, state, {isIf: true});
+												startFn();
+												self.codeParts[self.codeParts.length] = ('var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												self.codeParts[self.codeParts.length] = ('});');
+												endFn();
+												self.codeParts[self.codeParts.length] = endAsync(');');
 											} else if (name === 'when-true' && child.hasAttr('expr')) {
 												if (!state.isIf) {
-													self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {var __expr__ = !!(' + child.getAttr('expr') + ');');
+													self.codeParts[self.codeParts.length] = startAsync('page.asyncScript(function() {');
+													startFn();
 												};
+												self.codeParts[self.codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
 												self.codeParts[self.codeParts.length] = ('if (__expr__) {');
 												var newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
@@ -404,12 +437,15 @@ module.exports = {
 												writeAsyncWrites(newState);
 												self.codeParts[self.codeParts.length] = ('};');
 												if (!state.isIf) {
-													self.codeParts[self.codeParts.length] = ('});');
+													endFn();
+													self.codeParts[self.codeParts.length] = endAsync(');');
 												};
 											} else if (name === 'when-false' && child.hasAttr('expr')) {
 												if (!state.isIf) {
-													self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {var __expr__ = !!(' + child.getAttr('expr') + ');');
+													self.codeParts[self.codeParts.length] = startAsync('page.asyncScript(function() {');
+													startFn();
 												};
+												self.codeParts[self.codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
 												self.codeParts[self.codeParts.length] = ('if (!__expr__) {');
 												var newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
@@ -417,14 +453,15 @@ module.exports = {
 												writeAsyncWrites(newState);
 												self.codeParts[self.codeParts.length] = ('};');
 												if (!state.isIf) {
-													self.codeParts[self.codeParts.length] = ('});');
+													endFn();
+													self.codeParts[self.codeParts.length] = endAsync(');');
 												};
 											} else if ((!state.isIf) && (name === 'variable') && child.hasAttr('name') && child.hasAttr('expr')) {
 												// TODO: Combine "variable" tags
 												// FUTURE: "let" but must check if already defined in scope
 												var name = (child.getAttr('name') || 'x');
 												self.codeParts[self.codeParts.length] = ('var ' + name + ' = null;');
-												self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
+												self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
 											} else if ((!state.isIf) && (name === 'include') && child.hasAttr('src')) {
 												var path = child.getAttr('src');
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
@@ -435,11 +472,13 @@ module.exports = {
 											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
 												state.cacheId = child.getAttr('id');
 												var duration = child.getAttr("duration");
-												self.codeParts[self.codeParts.length] = 'page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', function() {';
+												self.codeParts[self.codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
+												startFn();
 												parseNode(child, state);
 												writeHTML(state);
 												writeAsyncWrites(state);
-												self.codeParts[self.codeParts.length] = '});';
+												endFn();
+												self.codeParts[self.codeParts.length] = endAsync(');');
 												state.cacheId = null;
 											};
 										} else if (ns === HTML_URI) {
@@ -460,7 +499,7 @@ module.exports = {
 													if (ns === DDT_URI) {
 														writeHTML(state);
 														writeAsyncWrites(state);
-														self.codeParts[self.codeParts.length] = ('page.asyncScript(function() {' + 'page.asyncWrite(escapeHtml((' + value + ') + ""))});'); // CDATA or Text
+														self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {return ' + 'page.asyncWrite(escapeHtml((' + value + ') + ""))});'); // CDATA or Text
 													} else {
 														state.html += value;
 													};
@@ -504,10 +543,12 @@ module.exports = {
 								promises: [],
 								cacheId: null,
 							};
-							
+	
+							fnHeader();
 							parseNode(ddi, state);
 							writeHTML(state);
 							writeAsyncWrites(state);
+							fnFooter();
 							
 							self.cache = cache;
 							self.cacheDuration = cacheDuration;
@@ -557,12 +598,12 @@ module.exports = {
 								for (var i = 0; i < this.codeParts.length; i++) {
 									var part = this.codeParts[i];
 									if (part instanceof templatesHtml.DDI) {
-										code += '\n' + newLevel + 'page.asyncInclude(' + part.name + ');';
+										code += '\n' + newLevel + __Internal__.surroundAsync('page.asyncInclude(' + part.name + ');');
 									} else {
 										code += '\n' + newLevel + part;
 									};
 								};
-								return level + 'function ' + this.name + '() {' + 
+								return level + (hasAsyncAwait ? 'async ' : '') + 'function ' + this.name + '() {' + 
 											'\n' + newLevel +
 											(writeHeader && this.getScriptHeader() || '') +
 											'\n' + code +
