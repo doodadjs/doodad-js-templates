@@ -62,9 +62,9 @@ module.exports = {
 
 				types.freezeObject(__options__);
 
-				templatesHtml.getOptions = function getOptions() {
+				templatesHtml.ADD('getOptions', function getOptions() {
 					return __options__;
-				};
+				});
 
 				
 				
@@ -85,9 +85,9 @@ module.exports = {
 					},
 				};
 				
-				templatesHtml.setResourcesLoader = function setResourcesLoader(loader) {
+				templatesHtml.ADD('setResourcesLoader', function setResourcesLoader(loader) {
 					__Internal__.resourcesLoader = loader;
-				};
+				});
 
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
@@ -231,7 +231,7 @@ module.exports = {
 					return (hasAsyncAwait ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
 				};
 
-				templatesHtml.DDI = types.INIT(types.Type.$inherit(
+				templatesHtml.ADD('DDI', types.Type.$inherit(
 					/*typeProto*/
 					{
 						$TYPE_NAME: 'DDI',
@@ -617,7 +617,7 @@ module.exports = {
 				));
 				
 									
-				templatesHtml.DDT = types.INIT(templatesHtml.DDI.$inherit(
+				templatesHtml.ADD('DDT', templatesHtml.DDI.$inherit(
 					/*typeProto*/
 					{
 						$TYPE_NAME: 'DDT',
@@ -665,15 +665,15 @@ module.exports = {
 				));
 			
 
-				templatesHtml.getTemplate = function getTemplate(path, /*optional*/options) {
+				templatesHtml.ADD('getTemplate', function getTemplate(path, /*optional*/options) {
 					var ddt = templatesHtml.DDT.$get(path, options);
 					return ddt.promise;
-				};
+				});
 				
 				
-				templatesHtml.isAvailable = function isAvailable() {
+				templatesHtml.ADD('isAvailable', function isAvailable() {
 					return xml.isAvailable();
-				};
+				});
 				
 				
 				//===================================
