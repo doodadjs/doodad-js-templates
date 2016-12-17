@@ -92,6 +92,7 @@ module.exports = {
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
 						$TYPE_NAME: 'PageTemplate',
+						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('PageTemplateBase')), true) */,
 						
 						request: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
@@ -235,6 +236,7 @@ module.exports = {
 					/*typeProto*/
 					{
 						$TYPE_NAME: 'DDI',
+						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('DDI')), true) */,
 						
 						$get: function $get(path, type, /*optional*/options) {
 							var templates = __Internal__.templatesCached,
@@ -621,6 +623,7 @@ module.exports = {
 					/*typeProto*/
 					{
 						$TYPE_NAME: 'DDT',
+						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('DDT')), true) */,
 						
 						$get: types.SUPER(function $get(path, /*optional*/options) {
 							return this._super(path, 'ddt', options);
