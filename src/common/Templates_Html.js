@@ -257,7 +257,7 @@ module.exports = {
 									if (key in __Internal__.templatesCached) {
 										var templ = __Internal__.templatesCached[key];
 										templ.dispatchEvent(new types.CustomEvent('unload'));
-										templ._delete(); // free resources
+										types.DESTROY(templ); // free resources
 										delete __Internal__.templatesCached[key];
 										tools.forEach(ddi.parents, function(key, ddi) {
 											deleteFn(key, ddi);
@@ -582,7 +582,7 @@ module.exports = {
 								.then(function openFilePromise(stream) {
 									return xml.parse(stream, {discardEntities: true})
 										.then(function parseXmlPromise(doc) {
-											stream.destroy();
+											types.DESTROY(stream);
 											this.doc = doc;
 								//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
