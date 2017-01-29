@@ -244,19 +244,20 @@ module.exports = {
 						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('DDI')), true) */,
 						
 						$get: function $get(path, type, /*optional*/options) {
-							var templates = __Internal__.templatesCached,
-								key = path.toString();
+							var key = path.toString();
 								
 							var ddi;
-							if (types.has(templates, key)) {
+							if (types.has(__Internal__.templatesCached, key)) {
 								//console.log('CACHED ' + key);
-								ddi = templates[key];
+								ddi = __Internal__.templatesCached[key];
 							} else {
-								ddi = templates[key] = new this(path, type, options);
+								ddi = __Internal__.templatesCached[key] = new this(path, type, options);
 								
 								var deleteFn = function _deleteFn(key, ddi) {
 									if (key in __Internal__.templatesCached) {
-										__Internal__.templatesCached[key].dispatchEvent(new types.CustomEvent('unload'));
+										var templ = __Internal__.templatesCached[key];
+										templ.dispatchEvent(new types.CustomEvent('unload'));
+										templ._delete(); // free resources
 										delete __Internal__.templatesCached[key];
 										tools.forEach(ddi.parents, function(key, ddi) {
 											deleteFn(key, ddi);
