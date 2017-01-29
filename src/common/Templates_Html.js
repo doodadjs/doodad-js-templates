@@ -211,6 +211,11 @@ module.exports = {
 												}, null, this)
 												.then(function outputOnEOF(ev) {
 													cached.validate();
+													var listener;
+													type.$ddt.addEventListener('unload', listener = function(ev) {
+														type.$ddt.removeEventListener('unload', listener);
+														cached.invalidate();
+													});
 												}, null, this)
 												.catch(function(err) {
 													cacheStream.write(io.EOF);
@@ -232,7 +237,7 @@ module.exports = {
 					return (hasAsyncAwait ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
 				};
 
-				templatesHtml.ADD('DDI', types.Type.$inherit(
+				templatesHtml.ADD('DDI', types.CustomEventTarget.$inherit(
 					/*typeProto*/
 					{
 						$TYPE_NAME: 'DDI',
@@ -250,7 +255,9 @@ module.exports = {
 								ddi = templates[key] = new this(path, type, options);
 								
 								var deleteFn = function _deleteFn(key, ddi) {
-									if (delete __Internal__.templatesCached[key]) {
+									if (key in __Internal__.templatesCached) {
+										__Internal__.templatesCached[key].dispatchEvent(new types.CustomEvent('unload'));
+										delete __Internal__.templatesCached[key];
 										tools.forEach(ddi.parents, function(key, ddi) {
 											deleteFn(key, ddi);
 										});
@@ -268,6 +275,8 @@ module.exports = {
 					},
 					/*instanceProto*/
 					{
+						onunload: null, // "unload" event
+
 						name: null,
 						path: null,
 						doc: null,
