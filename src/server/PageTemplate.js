@@ -43,6 +43,7 @@ module.exports = {
 					templatesHtml = templates.Html,
 					io = doodad.IO,
 					safeEval = tools.SafeEval,
+					files = tools.Files,
 				
 					nodeCrypto = require('crypto'),
 					nodeFs = require('fs');
@@ -206,13 +207,53 @@ module.exports = {
 						getIntegrityValue: doodad.PROTECTED(doodad.ASYNC(function getIntegrityValue(type, url) {
 							type = type.split(',')[0];
 							const handlerState = this.request.getHandlerState();
+							// TODO: Combine URLs with "baseURI" attribute or "base" element if present
 							url = handlerState.matcherResult.url.combine(url);
 							const handler = this.request.resolve(url, 'Doodad.Server.Http.StaticPage');
 							if (handler) {
-								return this.getFileHash(type + ',base64', handler.getSystemPath(this.request, url))
-									.then(function(hash) {
-										return (type + '-' + hash);
-									}, null, this);
+								const start = function start() {
+									const cached = this.__cacheHandler.getCached(this.request, {section: types.toString(url)});
+									if (cached.isValid()) {
+										return this.__cacheHandler.openFile(this.request, cached)
+											.then(function(cacheStream) {
+												if (cacheStream) {
+													return cacheStream.read().valueOf();
+												} else {
+													return start.call(this); // cache file has been deleted
+												};
+											}, null, this);
+									} else if (cached.isInvalid()) {
+										const path = handler.getSystemPath(this.request, url);
+										return this.getFileHash(type + ',base64', path)
+											.then(function(hash) {
+												hash = (type + '-' + hash);
+												return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
+													.then(function(cacheStream) {
+														return cacheStream.writeAsync(hash)
+															.then(function() {
+																return cacheStream.writeAsync(io.EOF);
+															}, null, this)
+															.then(function() {
+																cached.validate();
+																let listener;
+																const type = types.getType(this);
+																type.$ddt.addEventListener('unload', listener = function(ev) {
+																	type.$ddt.removeEventListener('unload', listener);
+																	cached.invalidate();
+																});
+																files.watch(path, listener, {once: true});
+																return hash;
+															}, null, this)
+															.catch(function(err) {
+																cacheStream.write(io.EOF);
+																cached.abort();
+																throw err;
+															}, this);
+													}, null, this)
+											}, null, this);
+									};
+								};
+								return start.call(this);
 							} else {
 								throw new types.Error("Can't resolve URL '~0~'.", [url]);
 							};
@@ -227,7 +268,6 @@ module.exports = {
 							if (value.toLowerCase() === 'auto') {
 								value = 'sha256'; // default hash type
 							};
-							// TODO: Combine URLs with "baseURI" attribute or "base" element if present
 							this.__compiledAttrs[key] = function() {
 								let srcAttr = compiledAttrs[src];
 								if (types.isFunction(srcAttr)) {
