@@ -63,6 +63,12 @@
 			"client": true,
 			"server": true,
 			"browserify": true
+		},
+		{
+			"src": "server/PageTemplate.js",
+			"client": false,
+			"server": true,
+			"browserify": false
 		}
 	],
 	"resources": [
