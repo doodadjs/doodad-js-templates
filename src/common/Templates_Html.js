@@ -39,16 +39,15 @@ module.exports = {
 				var doodad = root.Doodad,
 					types = doodad.Types,
 					tools = doodad.Tools,
+					widgets = doodad.Widgets,
 					safeEval = tools.SafeEval,
 					namespaces = doodad.Namespaces,
-					modules = doodad.Modules,
 					files = tools.Files,
 					config = tools.Config,
 					widgets = doodad.Widgets,
 					xml = tools.Xml,
 					templates = doodad.Templates,
-					templatesHtml = templates.Html,
-					io = doodad.IO;
+					templatesHtml = templates.Html;
 				
 				
 				var __Internal__ = {
@@ -89,18 +88,12 @@ module.exports = {
 					__Internal__.resourcesLoader = loader;
 				});
 
+
+
 				templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 					{
-						$TYPE_NAME: 'PageTemplate',
-						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('PageTemplateBase')), true) */,
-						
-						request: doodad.PUBLIC(doodad.READ_ONLY(null)),
-						
-						__buffer: doodad.PROTECTED(null),
-						__cacheStream: doodad.PROTECTED(null),
-						__cacheHandler: doodad.PROTECTED(null),
-						
-						renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),
+						$TYPE_NAME: 'TemplateBase',
+						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('TemplateBase')), true) */,
 
 						$ddt: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
@@ -110,26 +103,9 @@ module.exports = {
 							_shared.setAttribute(this, '$ddt', ddt);
 						}),
 
-						create: doodad.OVERRIDE(function create(request, cacheHandler) {
-							this._super();
-							
-							this.__cacheHandler = cacheHandler;
-	
-							var type = types.getType(this);
+						renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),
 
-							var cached = cacheHandler.getCached(request)
-							cached.disabled = !type.$ddt.cache;
-							cached.duration = type.$ddt.cacheDuration;
-
-							_shared.setAttribute(this, 'request', request);
-						}),
-						
 						render: doodad.OVERRIDE(function render() {
-							var Promise = types.getPromise();
-
-							this.__buffer = '';
-							this.__cacheStream = null;
-							
 							return this.renderTemplate()
 								.then(function() {
 									// Flush buffer
@@ -137,100 +113,22 @@ module.exports = {
 								}, null, this);
 						}),
 
-						// <PRB> Because of async/await, must be PUBLIC.
-						asyncWrite: doodad.PUBLIC(doodad.ASYNC(function asyncWrite(code, /*optional*/flush) {
-							this.__buffer += (code || '');
-							if (flush || (this.__buffer.length >= (1024 * 1024 * 1))) {  // TODO: Add an option in DDT for max buffer length
-								var buffer = this.__buffer;
-								this.__buffer = '';
-								return this.stream.writeAsync(buffer)
-									.then(function() {
-										if (this.__cacheStream) {
-											return this.__cacheStream.writeAsync(buffer);
-										};
-									}, null, this);
-									//.catch(function(err) {
-									//	debugger;
-									//});
-							};
-						})),
-						
-						// <PRB> Because of async/await, must be PUBLIC.
-						asyncForEach: doodad.PUBLIC(doodad.ASYNC(function asyncForEach(items, fn) {
-							var Promise = types.getPromise();
-							return Promise.resolve(items) // Items can be a Promise or a value
-								.then(function(items) {
-									return Promise.map(items, fn, {concurrency: 1, thisObj: this});
-								}, null, this);
-						})),
-						
-						// <PRB> Because of async/await, must be PUBLIC.
-						asyncInclude: doodad.PUBLIC(doodad.ASYNC(function asyncInclude(fn) {
-							// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
-							var Promise = types.getPromise();
-							return Promise.resolve(fn.call(this));
-						})),
-						
-						// <PRB> Because of async/await, must be PUBLIC.
-						asyncScript: doodad.PUBLIC(doodad.ASYNC(function asyncScript(fn) {
-							// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
-							var Promise = types.getPromise();
-							return Promise.resolve(fn.call(this));
-						})),
+						// <PRB> Because of async/await, the following must be PUBLIC...
 
-						// <PRB> Because of async/await, must be PUBLIC.
-						asyncCache: doodad.PUBLIC(doodad.ASYNC(function asyncStartCache(id, duration, fn) {
-							var Promise = types.getPromise();
-							var type = types.getType(this);
-							var start = function start() {
-								var cached = this.__cacheHandler.getCached(this.request, {section: id});
-								if (cached.isValid()) {
-									return this.__cacheHandler.openFile(this.request, cached)
-										.then(function(cacheStream) {
-											if (cacheStream) {
-												var promise = cacheStream.onEOF.promise();
-												cacheStream.pipe(this.stream, {end: false});
-												cacheStream.flush();
-												return promise;
-											} else {
-												return start.call(this); // cache file has been deleted
-											};
-										}, null, this);
-								} else if (cached.isInvalid()) {
-									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding, duration: duration})
-										.then(function(cacheStream) {
-											this.__cacheStream = cacheStream;
-											// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
-											return Promise.resolve(fn.call(this))
-												.then(function() {
-													return this.asyncWrite(null, true);
-												}, null, this)
-												.then(function() {
-													this.__cacheStream = null;
-													return cacheStream.writeAsync(io.EOF);
-												}, null, this)
-												.then(function outputOnEOF(ev) {
-													cached.validate();
-													var listener;
-													type.$ddt.addEventListener('unload', listener = function(ev) {
-														type.$ddt.removeEventListener('unload', listener);
-														cached.invalidate();
-													});
-												}, null, this)
-												.catch(function(err) {
-													cacheStream.write(io.EOF);
-													cached.abort();
-													throw err;
-												}, this);
-										}, null, this);
-								};
-							};
-							return this.asyncWrite(null, true)
-								.then(start, null, this);
-						})),
+						asyncWrite: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(code, /*optional*/flush)
+						asyncForEach: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(items, fn)
+						asyncInclude: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
+						asyncScript: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
+
+						compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
+						compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
+						asyncWriteAttrs: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function()
+
+						asyncCache: doodad.PUBLIC(doodad.ASYNC(doodad.NOT_IMPLEMENTED())), // function(id, duration, fn)
 					})));
-				
-				
+
+
+
 				var hasAsyncAwait = types.supportsAsyncAwait();
 
 				__Internal__.surroundAsync = function surroundAsync(code) {
@@ -323,7 +221,8 @@ module.exports = {
 							};
 
 							var ddi = this.doc.getRoot(),
-								self = this;
+								self = this,
+								codeParts = self.codeParts;
 
 							var cache = false;
 							var cacheDuration = null;
@@ -341,15 +240,15 @@ module.exports = {
 							
 							var fnHeader = function fnHeader() {
 								if (!hasAsyncAwait) {
-									self.codeParts[self.codeParts.length] = 'var pagePromise = Promise.resolve();';
+									codeParts[codeParts.length] = 'var pagePromise = Promise.resolve();';
 								};
 							};
 
 							var startFn = function startFn(/*optional*/args) {
 								if (hasAsyncAwait) {
-									self.codeParts[self.codeParts.length] = '(async function(' + (args || '') + ') {';
+									codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
 								} else {
-									self.codeParts[self.codeParts.length] = '(function(' + (args || '') + ') {';
+									codeParts[codeParts.length] = '(function(' + (args || '') + ') {';
 								};
 								fnHeader();
 							};
@@ -372,18 +271,18 @@ module.exports = {
 
 							var fnFooter = function fnFooter() {
 								if (!hasAsyncAwait) {
-									self.codeParts[self.codeParts.length] = 'return pagePromise;';
+									codeParts[codeParts.length] = 'return pagePromise;';
 								};
 							};
 
 							var endFn = function endFn() {
 								fnFooter();
-								self.codeParts[self.codeParts.length] = '})';
+								codeParts[codeParts.length] = '})';
 							};
 
 							var writeAsyncWrites = function writeAsyncWrites(state) {
 								if (state.writes) {
-									self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
 									state.writes = '';
 								};
 							};
@@ -413,84 +312,84 @@ module.exports = {
 											if ((!state.isIf) && (name === 'script') && child.getChildren().getAt(0)) {
 												var vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
 												if (vars.length) {
-													self.codeParts[self.codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
+													codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 												};
-												self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
+												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'for-each') && child.hasAttr('items') && child.hasAttr('item')) {
-												self.codeParts[self.codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
+												codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
 												startFn(child.getAttr('item') || 'item');
 												parseNode(child, state);
 												writeHTML(state);
 												writeAsyncWrites(state);
 												endFn();
-												self.codeParts[self.codeParts.length] = endAsync(');');
+												codeParts[codeParts.length] = endAsync(');');
 											} else if ((!state.isIf) && (name === 'eval') && child.getChildren().getAt(0)) {
-												self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
+												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'if') && child.hasAttr('expr')) {
-												self.codeParts[self.codeParts.length] = startAsync('page.asyncScript(');
+												codeParts[codeParts.length] = startAsync('page.asyncScript(');
 												var newState = types.extend({}, state, {isIf: true});
 												startFn();
-												self.codeParts[self.codeParts.length] = ('var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
+												codeParts[codeParts.length] = ('var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
 												endFn();
-												self.codeParts[self.codeParts.length] = endAsync(');');
+												codeParts[codeParts.length] = endAsync(');');
 											} else if (name === 'when-true' && child.hasAttr('expr')) {
 												if (!state.isIf) {
-													self.codeParts[self.codeParts.length] = startAsync('page.asyncScript(function() {');
+													codeParts[codeParts.length] = startAsync('page.asyncScript(function() {');
 													startFn();
 												};
-												self.codeParts[self.codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
-												self.codeParts[self.codeParts.length] = ('if (__expr__) {');
+												codeParts[codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
+												codeParts[codeParts.length] = ('if (__expr__) {');
 												var newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												self.codeParts[self.codeParts.length] = ('};');
+												codeParts[codeParts.length] = ('};');
 												if (!state.isIf) {
 													endFn();
-													self.codeParts[self.codeParts.length] = endAsync(');');
+													codeParts[codeParts.length] = endAsync(');');
 												};
 											} else if (name === 'when-false' && child.hasAttr('expr')) {
 												if (!state.isIf) {
-													self.codeParts[self.codeParts.length] = startAsync('page.asyncScript(function() {');
+													codeParts[codeParts.length] = startAsync('page.asyncScript(function() {');
 													startFn();
 												};
-												self.codeParts[self.codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
-												self.codeParts[self.codeParts.length] = ('if (!__expr__) {');
+												codeParts[codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
+												codeParts[codeParts.length] = ('if (!__expr__) {');
 												var newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												self.codeParts[self.codeParts.length] = ('};');
+												codeParts[codeParts.length] = ('};');
 												if (!state.isIf) {
 													endFn();
-													self.codeParts[self.codeParts.length] = endAsync(');');
+													codeParts[codeParts.length] = endAsync(');');
 												};
 											} else if ((!state.isIf) && (name === 'variable') && child.hasAttr('name') && child.hasAttr('expr')) {
 												// TODO: Combine "variable" tags
 												// FUTURE: "let" but must check if already defined in scope
 												var name = (child.getAttr('name') || 'x');
-												self.codeParts[self.codeParts.length] = ('var ' + name + ' = null;');
-												self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
+												codeParts[codeParts.length] = ('var ' + name + ' = null;');
+												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
 											} else if ((!state.isIf) && (name === 'include') && child.hasAttr('src')) {
 												var path = child.getAttr('src');
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
 												var ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
-												self.codeParts[self.codeParts.length] = (ddi);
+												codeParts[codeParts.length] = (ddi);
 												state.promises[state.promises.length] = (ddi.promise);
 												ddi.parents.set(self, parentPath.toString());
 											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
 												state.cacheId = child.getAttr('id');
 												var duration = child.getAttr("duration");
-												self.codeParts[self.codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
+												codeParts[codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
 												startFn();
 												parseNode(child, state);
 												writeHTML(state);
 												writeAsyncWrites(state);
 												endFn();
-												self.codeParts[self.codeParts.length] = endAsync(');');
+												codeParts[codeParts.length] = endAsync(');');
 												state.cacheId = null;
 											};
 										} else if (ns === HTML_URI) {
@@ -502,21 +401,41 @@ module.exports = {
 												} else if (state.isHead && (child.getName() === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
 													state.hasCharset = true;
 												};
+												var attrs = child.getAttrs();
 												state.html += '<' + name;
-												child.getAttrs().forEach(function forEachAttr(attr) {
-													var key = attr.getName(),
-														value = attr.getValue(),
-														ns = attr.getBaseURI();
-													state.html += ' ' + key + '="';
-													if (ns === DDT_URI) {
-														writeHTML(state);
-														writeAsyncWrites(state);
-														self.codeParts[self.codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {return ' + 'page.asyncWrite(escapeHtml((' + value + ') + ""))});'); // CDATA or Text
-													} else {
-														state.html += value;
-													};
-													state.html += '"';
-												}, this);
+												if (tools.findItem(attrs, function(attr) {
+													return (attr.getBaseURI() === DDT_URI);
+												}) === null) {
+													attrs.forEach(function forEachAttr(attr) {
+														var key = attr.getName(),
+															value = attr.getValue();
+														state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
+													}, this);
+												} else {
+													writeHTML(state);
+													writeAsyncWrites(state);
+													attrs.forEach(function forEachAttr(attr) {
+														var key = attr.getName(),
+															value = attr.getValue(),
+															compute = (attr.getBaseURI() === DDT_URI),
+															integrity = null;
+														if (compute) {
+															if ((name === 'script') && (key === 'integrity')) {
+																integrity = 'src';
+															} else if ((name === 'link') && (key === 'integrity')) {
+																integrity = 'href';
+															};
+															if (integrity) {
+																codeParts[codeParts.length] = 'page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');';
+															} else {
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileAttr(' + types.toSource(key) + ',(' + value + '))});');
+															};
+														} else {
+															codeParts[codeParts.length] = 'page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');';
+														};
+													}, this);
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
+												};
 												// <PRB> Browsers do not well support "<name />"
 												var hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
 												if (hasChildren) {
