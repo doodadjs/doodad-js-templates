@@ -151,22 +151,23 @@ module.exports = {
 							} else {
 								ddi = __Internal__.templatesCached[key] = new this(path, type, options);
 								
-								var deleteFn = function _deleteFn(key, ddi) {
-									if (key in __Internal__.templatesCached) {
-										var templ = __Internal__.templatesCached[key];
-										templ.dispatchEvent(new types.CustomEvent('unload'));
-										types.DESTROY(templ); // free resources
-										delete __Internal__.templatesCached[key];
-										tools.forEach(ddi.parents, function(key, ddi) {
-											deleteFn(key, ddi);
-										});
+								if (root.getOptions().debug) {
+									var deleteFn = function _deleteFn(key, ddi) {
+										if (key in __Internal__.templatesCached) {
+											var templ = __Internal__.templatesCached[key];
+											templ.dispatchEvent(new types.CustomEvent('unload'));
+											types.DESTROY(templ); // free resources
+											delete __Internal__.templatesCached[key];
+											tools.forEach(ddi.parents, function(key, ddi) {
+												deleteFn(key, ddi);
+											});
+										};
 									};
-								};
 
-								files.watch(path, function watchFileCallback() {
-									deleteFn(key, ddi);
-								}, {once: true});
-								
+									files.watch(path, function watchFileCallback() {
+										deleteFn(key, ddi);
+									}, {once: true});
+								};
 							};
 							
 							return ddi;

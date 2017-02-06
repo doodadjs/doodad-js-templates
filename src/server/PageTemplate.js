@@ -241,7 +241,9 @@ module.exports = {
 																	type.$ddt.removeEventListener('unload', listener);
 																	cached.invalidate();
 																});
-																files.watch(path, listener, {once: true});
+																if (root.getOptions().debug) {
+																	files.watch(path, listener, {once: true});
+																};
 																return hash;
 															}, null, this)
 															.catch(function(err) {
