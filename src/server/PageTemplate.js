@@ -72,9 +72,9 @@ module.exports = {
 	
 							const type = types.getType(this);
 
-							const cached = cacheHandler.getCached(request)
-							cached.disabled = !type.$ddt.cache;
-							cached.duration = type.$ddt.cacheDuration;
+							const state = request.getHandlerState(cacheHandler);
+							state.defaultDisabled = !type.$ddt.cache;
+							state.defaultDuration = type.$ddt.cacheDuration;
 
 							_shared.setAttribute(this, 'request', request);
 						}),
@@ -123,7 +123,8 @@ module.exports = {
 							const Promise = types.getPromise();
 							const type = types.getType(this);
 							const start = function start() {
-								const cached = this.__cacheHandler.getCached(this.request, {section: id});
+								const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: id});
+								//cached.disabled = false;
 								if (cached.isValid()) {
 									return this.__cacheHandler.openFile(this.request, cached)
 										.then(function(cacheStream) {
@@ -147,7 +148,7 @@ module.exports = {
 												}, null, this)
 												.then(function() {
 													this.__cacheStream = null;
-													return cacheStream.writeAsync(io.EOF);
+													return cacheStream && cacheStream.writeAsync(io.EOF);
 												}, null, this)
 												.then(function outputOnEOF(ev) {
 													cached.validate();
@@ -162,6 +163,12 @@ module.exports = {
 													cached.abort();
 													throw err;
 												}, this);
+										}, null, this);
+								} else {
+									this.__cacheStream = null;
+									return Promise.resolve(fn.call(this))
+										.then(function() {
+											return this.asyncWrite(null, true);
 										}, null, this);
 								};
 							};
@@ -206,13 +213,26 @@ module.exports = {
 
 						getIntegrityValue: doodad.PROTECTED(doodad.ASYNC(function getIntegrityValue(type, url) {
 							type = type.split(',')[0];
+
 							const handlerState = this.request.getHandlerState();
+
 							// TODO: Combine URLs with "baseURI" attribute or "base" element if present
 							url = handlerState.matcherResult.url.combine(url);
+
 							const handler = this.request.resolve(url, 'Doodad.Server.Http.StaticPage');
+
 							if (handler) {
+								const path = handler.getSystemPath(this.request, url);
+
+								const getHash = function getHash() {
+									return this.getFileHash(type + ',base64', path)
+										.then(function(hash) {
+											return (type + '-' + hash);
+										});
+								};
+
 								const start = function start() {
-									const cached = this.__cacheHandler.getCached(this.request, {section: types.toString(url)});
+									const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: types.toString(url)});
 									if (cached.isValid()) {
 										return this.__cacheHandler.openFile(this.request, cached)
 											.then(function(cacheStream) {
@@ -222,14 +242,13 @@ module.exports = {
 													return start.call(this); // cache file has been deleted
 												};
 											}, null, this);
+
 									} else if (cached.isInvalid()) {
-										const path = handler.getSystemPath(this.request, url);
-										return this.getFileHash(type + ',base64', path)
+										return getHash.call(this)
 											.then(function(hash) {
-												hash = (type + '-' + hash);
 												return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
 													.then(function(cacheStream) {
-														return cacheStream.writeAsync(hash)
+														return cacheStream && cacheStream.writeAsync(hash)
 															.then(function() {
 																return cacheStream.writeAsync(io.EOF);
 															}, null, this)
@@ -253,6 +272,10 @@ module.exports = {
 															}, this);
 													}, null, this)
 											}, null, this);
+
+									} else {
+										return getHash.call(this);
+
 									};
 								};
 								return start.call(this);
