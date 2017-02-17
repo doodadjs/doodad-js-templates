@@ -124,7 +124,6 @@ module.exports = {
 							const type = types.getType(this);
 							const start = function start() {
 								const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: id});
-								//cached.disabled = false;
 								if (cached.isValid()) {
 									return this.__cacheHandler.openFile(this.request, cached)
 										.then(function(cacheStream) {
@@ -232,7 +231,12 @@ module.exports = {
 								};
 
 								const start = function start() {
-									const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: types.toString(url)});
+									const key = this.__cacheHandler.createKey({
+										hash: type,
+										path: types.toString(path),
+									});
+									types.freezeObject(key); // Key is complete
+									const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
 									if (cached.isValid()) {
 										return this.__cacheHandler.openFile(this.request, cached)
 											.then(function(cacheStream) {
