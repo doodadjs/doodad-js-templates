@@ -129,10 +129,8 @@ module.exports = {
 
 
 
-				var hasAsyncAwait = types.supportsAsyncAwait();
-
 				__Internal__.surroundAsync = function surroundAsync(code) {
-					return (hasAsyncAwait ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
+					return (types.hasAsyncAwait() ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
 				};
 
 				templatesHtml.ADD('DDI', types.CustomEventTarget.$inherit(
@@ -240,13 +238,13 @@ module.exports = {
 							};
 							
 							var fnHeader = function fnHeader() {
-								if (!hasAsyncAwait) {
+								if (!types.hasAsyncAwait()) {
 									codeParts[codeParts.length] = 'var pagePromise = Promise.resolve();';
 								};
 							};
 
 							var startFn = function startFn(/*optional*/args) {
-								if (hasAsyncAwait) {
+								if (types.hasAsyncAwait()) {
 									codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
 								} else {
 									codeParts[codeParts.length] = '(function(' + (args || '') + ') {';
@@ -255,7 +253,7 @@ module.exports = {
 							};
 
 							var startAsync = function startAsync(code) {
-								if (hasAsyncAwait) {
+								if (types.hasAsyncAwait()) {
 									return 'await ' + code;
 								} else {
 									return 'pagePromise = pagePromise.then(function() {return ' + code;
@@ -263,7 +261,7 @@ module.exports = {
 							};
 
 							var endAsync = function endAsync(/*optional*/code) {
-								if (hasAsyncAwait) {
+								if (types.hasAsyncAwait()) {
 									return (code || '');
 								} else {
 									return (code || '') + '}, null, this);';
@@ -271,7 +269,7 @@ module.exports = {
 							};
 
 							var fnFooter = function fnFooter() {
-								if (!hasAsyncAwait) {
+								if (!types.hasAsyncAwait()) {
 									codeParts[codeParts.length] = 'return pagePromise;';
 								};
 							};
@@ -535,7 +533,7 @@ module.exports = {
 										code += '\n' + newLevel + part;
 									};
 								};
-								return level + (hasAsyncAwait ? 'async ' : '') + 'function ' + this.name + '() {' + 
+								return level + (types.hasAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' + 
 											'\n' + newLevel +
 											(writeHeader && this.getScriptHeader() || '') +
 											'\n' + code +
