@@ -36,7 +36,7 @@ module.exports = {
 				// Get namespaces
 				//===================================
 				
-				var doodad = root.Doodad,
+				const doodad = root.Doodad,
 					types = doodad.Types,
 					tools = doodad.Tools,
 					widgets = doodad.Widgets,
@@ -44,18 +44,17 @@ module.exports = {
 					namespaces = doodad.Namespaces,
 					files = tools.Files,
 					config = tools.Config,
-					widgets = doodad.Widgets,
 					xml = tools.Xml,
 					templates = doodad.Templates,
 					templatesHtml = templates.Html;
 				
 				
-				var __Internal__ = {
+				const __Internal__ = {
 					templatesCached: types.nullObject(),
 				};
 				
 				
-				var __options__ = types.extend({
+				const __options__ = types.extend({
 					resourcesPath: './res/', // Combined with package's root folder
 				}, _options);
 
@@ -70,9 +69,9 @@ module.exports = {
 				// TODO: Make a better and common resources locator and loader
 				__Internal__.resourcesLoader = {
 					locate: function locate(fileName, /*optional*/options) {
-						var Promise = types.getPromise();
-						return Promise['try'](function tryLocate() {
-							var path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
+						const Promise = types.getPromise();
+						return Promise.try(function tryLocate() {
+							const path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
 								.set({file: null})
 								.combine(_shared.pathParser(__options__.resourcesPath))
 								.combine(_shared.pathParser(fileName));
@@ -140,9 +139,9 @@ module.exports = {
 						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('DDI')), true) */,
 						
 						$get: function $get(path, type, /*optional*/options) {
-							var key = path.toString();
+							const key = path.toString();
 								
-							var ddi;
+							let ddi;
 							if (types.has(__Internal__.templatesCached, key)) {
 								//console.log('CACHED ' + key);
 								ddi = __Internal__.templatesCached[key];
@@ -150,9 +149,9 @@ module.exports = {
 								ddi = __Internal__.templatesCached[key] = new this(path, type, options);
 								
 								if (root.getOptions().debug) {
-									var deleteFn = function _deleteFn(key, ddi) {
+									const deleteFn = function _deleteFn(key, ddi) {
 										if (key in __Internal__.templatesCached) {
-											var templ = __Internal__.templatesCached[key];
+											const templ = __Internal__.templatesCached[key];
 											templ.dispatchEvent(new types.CustomEvent('unload'));
 											types.DESTROY(templ); // free resources
 											delete __Internal__.templatesCached[key];
@@ -197,7 +196,7 @@ module.exports = {
 							// NOTE: Returns the header of the "renderTemplate" function
 							return (function() {
 								// Gives access to page object everywhere in "renderTemplate"
-								var page = this;
+								const page = this;
 							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						},
 						
@@ -211,39 +210,39 @@ module.exports = {
 						parse: doodad.ASYNC(function parse(parentPath) {
 							// TODO: ES7 (async/await) when widely supported (both in all supported browsers & nodejs)
 							
-							var DDT_URI = "http://www.doodad-js.local/schemas/ddt"
-							var HTML_URI = "http://www.doodad-js.local/schemas/html5"
+							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
+							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
 							
-							var doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
+							const doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
 							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
 								throw new types.ParseError("Document type is missing or invalid.");
 							};
 
-							var ddi = this.doc.getRoot(),
+							const ddi = this.doc.getRoot(),
 								self = this,
 								codeParts = self.codeParts;
 
-							var cache = false;
-							var cacheDuration = null;
+							let cache = false;
+							let cacheDuration = null;
 							if (self.type === 'ddt') {
 								cache = types.toBoolean((self.type === 'ddt') && ddi.getAttr('cache') || 'false');
 								cacheDuration = ddi.getAttr('cacheDuration');
 							};
 
-							var writeHTML = function writeHTML(state) {
+							const writeHTML = function writeHTML(state) {
 								if (state.html) {
 									state.writes += types.toSource(state.html) + ' + ';
 									state.html = '';
 								};
 							};
 							
-							var fnHeader = function fnHeader() {
+							const fnHeader = function fnHeader() {
 								if (!types.hasAsyncAwait()) {
-									codeParts[codeParts.length] = 'var pagePromise = Promise.resolve();';
+									codeParts[codeParts.length] = 'const pagePromise = Promise.resolve();';
 								};
 							};
 
-							var startFn = function startFn(/*optional*/args) {
+							const startFn = function startFn(/*optional*/args) {
 								if (types.hasAsyncAwait()) {
 									codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
 								} else {
@@ -252,7 +251,7 @@ module.exports = {
 								fnHeader();
 							};
 
-							var startAsync = function startAsync(code) {
+							const startAsync = function startAsync(code) {
 								if (types.hasAsyncAwait()) {
 									return 'await ' + code;
 								} else {
@@ -260,7 +259,7 @@ module.exports = {
 								};
 							};
 
-							var endAsync = function endAsync(/*optional*/code) {
+							const endAsync = function endAsync(/*optional*/code) {
 								if (types.hasAsyncAwait()) {
 									return (code || '');
 								} else {
@@ -268,18 +267,18 @@ module.exports = {
 								};
 							};
 
-							var fnFooter = function fnFooter() {
+							const fnFooter = function fnFooter() {
 								if (!types.hasAsyncAwait()) {
 									codeParts[codeParts.length] = 'return pagePromise;';
 								};
 							};
 
-							var endFn = function endFn() {
+							const endFn = function endFn() {
 								fnFooter();
 								codeParts[codeParts.length] = '})';
 							};
 
-							var writeAsyncWrites = function writeAsyncWrites(state) {
+							const writeAsyncWrites = function writeAsyncWrites(state) {
 								if (state.writes) {
 									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
 									state.writes = '';
@@ -291,10 +290,10 @@ module.exports = {
 							// TODO: Throw XML validation errors
 							// TODO: Validation by XSL ?
 
-							var parseNode = function parseNode(node, state) {
+							const parseNode = function parseNode(node, state) {
 								node.getChildren().forEach(function forEachChild(child, pos, ar) {
 									if (child instanceof xml.Element) {
-										var name = child.getName(),
+										const name = child.getName(),
 											ns = child.getBaseURI();
 
 										if ((ns === DDT_URI) && (name === 'doctype') && !state.hasDocType) {
@@ -309,7 +308,7 @@ module.exports = {
 											writeHTML(state);
 											writeAsyncWrites(state);
 											if ((!state.isIf) && (name === 'script') && child.getChildren().getAt(0)) {
-												var vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
+												const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
 												if (vars.length) {
 													codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 												};
@@ -326,7 +325,7 @@ module.exports = {
 												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
 											} else if ((!state.isIf) && (name === 'if') && child.hasAttr('expr')) {
 												codeParts[codeParts.length] = startAsync('page.asyncScript(');
-												var newState = types.extend({}, state, {isIf: true});
+												const newState = types.extend({}, state, {isIf: true});
 												startFn();
 												codeParts[codeParts.length] = ('var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
 												parseNode(child, newState);
@@ -341,7 +340,7 @@ module.exports = {
 												};
 												codeParts[codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
 												codeParts[codeParts.length] = ('if (__expr__) {');
-												var newState = types.extend({}, state, {isIf: false});
+												const newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
@@ -357,7 +356,7 @@ module.exports = {
 												};
 												codeParts[codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
 												codeParts[codeParts.length] = ('if (!__expr__) {');
-												var newState = types.extend({}, state, {isIf: false});
+												const newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
@@ -369,19 +368,19 @@ module.exports = {
 											} else if ((!state.isIf) && (name === 'variable') && child.hasAttr('name') && child.hasAttr('expr')) {
 												// TODO: Combine "variable" tags
 												// FUTURE: "let" but must check if already defined in scope
-												var name = (child.getAttr('name') || 'x');
+												const name = (child.getAttr('name') || 'x');
 												codeParts[codeParts.length] = ('var ' + name + ' = null;');
 												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
 											} else if ((!state.isIf) && (name === 'include') && child.hasAttr('src')) {
-												var path = child.getAttr('src');
+												let path = child.getAttr('src');
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
-												var ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
-												codeParts[codeParts.length] = (ddi);
-												state.promises[state.promises.length] = (ddi.promise);
+												const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
+												codeParts[codeParts.length] = ddi;
+												state.promises[state.promises.length] = ddi.promise;
 												ddi.parents.set(self, parentPath.toString());
 											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
 												state.cacheId = child.getAttr('id');
-												var duration = child.getAttr("duration");
+												const duration = child.getAttr("duration");
 												codeParts[codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
 												startFn();
 												parseNode(child, state);
@@ -400,13 +399,13 @@ module.exports = {
 												} else if (state.isHead && (child.getName() === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
 													state.hasCharset = true;
 												};
-												var attrs = child.getAttrs();
+												const attrs = child.getAttrs();
 												state.html += '<' + name;
 												if (tools.findItem(attrs, function(attr) {
 													return (attr.getBaseURI() === DDT_URI);
 												}) === null) {
 													attrs.forEach(function forEachAttr(attr) {
-														var key = attr.getName(),
+														const key = attr.getName(),
 															value = attr.getValue();
 														state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
 													}, this);
@@ -414,10 +413,10 @@ module.exports = {
 													writeHTML(state);
 													writeAsyncWrites(state);
 													attrs.forEach(function forEachAttr(attr) {
-														var key = attr.getName(),
+														const key = attr.getName(),
 															value = attr.getValue(),
-															compute = (attr.getBaseURI() === DDT_URI),
-															integrity = null;
+															compute = (attr.getBaseURI() === DDT_URI);
+														let integrity = null;
 														if (compute) {
 															if ((name === 'script') && (key === 'integrity')) {
 																integrity = 'src';
@@ -436,7 +435,7 @@ module.exports = {
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 												};
 												// <PRB> Browsers do not well support "<name />"
-												var hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
+												const hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
 												if (hasChildren) {
 													state.html += '>';
 												};
@@ -463,7 +462,7 @@ module.exports = {
 								}, this);
 							};
 							
-							var state = {
+							const state = {
 								hasDocType: (this.type !== 'ddt'),
 								hasCharset: false,
 								isHead: false,
@@ -483,7 +482,7 @@ module.exports = {
 							self.cache = cache;
 							self.cacheDuration = cacheDuration;
 
-							var Promise = types.getPromise();
+							const Promise = types.getPromise();
 							return Promise.all(state.promises);
 						}),
 
@@ -495,7 +494,7 @@ module.exports = {
 							this.name = path.file.replace(/[.]/g, '_');
 							this.path = path;
 							this.parents = new types.Map();
-							var encoding = types.getDefault(this.options, 'encoding', 'utf-8');
+							const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
 							this.promise = files.openFile(path, {encoding: encoding})
 								.then(function openFilePromise(stream) {
 									return xml.parse(stream, {discardEntities: true})
@@ -513,21 +512,21 @@ module.exports = {
 						}),
 						
 						toString: function toString(/*optional*/level, /*optional*/writeHeader) {
-							var code = '';
+							let code = '';
 							if (types.isNothing(level)) {
 								level = '';
 							};
-							var newLevel = level + '    ';
+							const newLevel = level + '    ';
 							if (this.codeParts && this.codeParts.length) {
-								for (var i = 0; i < this.codeParts.length; i++) {
-									var part = this.codeParts[i];
-									if (part instanceof templatesHtml.DDI) {
+								for (let i = 0; i < this.codeParts.length; i++) {
+									const part = this.codeParts[i];
+									if (types._instanceof(part, templatesHtml.DDI)) {
 										code += part.toString(newLevel);
 									};
 								};
-								for (var i = 0; i < this.codeParts.length; i++) {
-									var part = this.codeParts[i];
-									if (part instanceof templatesHtml.DDI) {
+								for (let i = 0; i < this.codeParts.length; i++) {
+									const part = this.codeParts[i];
+									if (types._instanceof(part, templatesHtml.DDI)) {
 										code += '\n' + newLevel + __Internal__.surroundAsync('page.asyncInclude(' + part.name + ');');
 									} else {
 										code += '\n' + newLevel + part;
@@ -562,20 +561,20 @@ module.exports = {
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super(path, type, options);
 							
-							var code;
+							let code;
 							
 							this.promise = this.promise.then(function extendDDTPromise() {
-								var ddtNode = this.doc.getRoot(),
+								const ddtNode = this.doc.getRoot(),
 									name = ddtNode.getAttr('type');
 									
-								var type = namespaces.get(name);
+								const type = namespaces.get(name);
 								
 								root.DD_ASSERT && root.DD_ASSERT(types._implements(type, templatesHtml.PageTemplate), "Unknown page template '~0~'.", [name])
 								
 								code = this.toString('', true);
 					//console.log(code);
-								var locals = this.getScriptVariables();
-								var fn = safeEval.createEval(types.keys(locals))
+								const locals = this.getScriptVariables();
+								let fn = safeEval.createEval(types.keys(locals))
 								fn = fn.apply(null, types.values(locals));
 								fn = fn('(' + code + ')');
 					//console.log(fn);
@@ -587,7 +586,7 @@ module.exports = {
 									renderTemplate: doodad.OVERRIDE(fn),
 								}), [null, null, null, this]);
 							}, null, this)
-							['catch'](function catchExtendDDTPromise(err) {
+							.catch(function catchExtendDDTPromise(err) {
 								console.log(code);
 								throw err;
 							});
@@ -597,7 +596,7 @@ module.exports = {
 			
 
 				templatesHtml.ADD('getTemplate', function getTemplate(path, /*optional*/options) {
-					var ddt = templatesHtml.DDT.$get(path, options);
+					const ddt = templatesHtml.DDT.$get(path, options);
 					return ddt.promise;
 				});
 				
