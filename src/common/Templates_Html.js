@@ -561,7 +561,7 @@ module.exports = {
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super(path, type, options);
 							
-							let code;
+							let code = '';
 							
 							this.promise = this.promise.then(function extendDDTPromise() {
 								const ddtNode = this.doc.getRoot(),
