@@ -241,7 +241,7 @@ module.exports = {
 										return this.__cacheHandler.openFile(this.request, cached)
 											.then(function(cacheStream) {
 												if (cacheStream) {
-													return cacheStream.read().valueOf();
+													return cacheStream.read();
 												} else {
 													return start.call(this); // cache file has been deleted
 												};
