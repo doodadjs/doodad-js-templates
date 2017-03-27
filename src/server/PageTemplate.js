@@ -241,7 +241,10 @@ module.exports = {
 										return this.__cacheHandler.openFile(this.request, cached)
 											.then(function(cacheStream) {
 												if (cacheStream) {
-													return cacheStream.read();
+													// NOTE: "CacheStream" is binary.
+													const buf = cacheStream.read();
+													const hash = io.TextData.$decode(buf, 'ascii');
+													return hash;
 												} else {
 													return start.call(this); // cache file has been deleted
 												};
