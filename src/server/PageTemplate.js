@@ -42,6 +42,7 @@ module.exports = {
 					templates = doodad.Templates,
 					templatesHtml = templates.Html,
 					io = doodad.IO,
+					ioMixIns = io.MixIns,
 					safeEval = tools.SafeEval,
 					files = tools.Files,
 				
@@ -123,8 +124,11 @@ module.exports = {
 							const Promise = types.getPromise();
 							const type = types.getType(this);
 							const start = function start() {
-								const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: id});
-								if (cached.isValid()) {
+								let cached = null;
+								if (this.__cacheHandler) {
+									cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: id});
+								};
+								if (cached && cached.isValid()) {
 									return this.__cacheHandler.openFile(this.request, cached)
 										.then(function(cacheStream) {
 											if (cacheStream) {
@@ -136,7 +140,7 @@ module.exports = {
 												return start.call(this); // cache file has been deleted
 											};
 										}, null, this);
-								} else if (cached.isInvalid()) {
+								} else if (cached && cached.isInvalid()) {
 									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding, duration: duration})
 										.then(function(cacheStream) {
 											this.__cacheStream = cacheStream;
@@ -147,7 +151,20 @@ module.exports = {
 												}, null, this)
 												.then(function() {
 													this.__cacheStream = null;
-													return cacheStream && cacheStream.writeAsync(io.EOF);
+													if (cacheStream) {
+														// TODO: Write a helper for that, like ".end"
+														if (cacheStream._implements(ioMixIns.BufferedStreamBase)) {
+															return cacheStream.flushAsync({purge: true})
+																.then(function() {
+																	if (cacheStream.canWrite()) {
+																		cacheStream.write(io.EOF);
+																		return cacheStream.flushAsync({purge: true});
+																	};
+																});
+														} else {
+															return cacheStream.writeAsync(io.EOF);
+														};
+													};
 												}, null, this)
 												.then(function outputOnEOF(ev) {
 													cached.validate();
@@ -158,7 +175,6 @@ module.exports = {
 													});
 												}, null, this)
 												.catch(function(err) {
-													cacheStream.write(io.EOF);
 													cached.abort();
 													throw err;
 												}, this);
@@ -231,33 +247,56 @@ module.exports = {
 								};
 
 								const start = function start() {
-									const key = this.__cacheHandler.createKey({
-										hash: type,
-										path: types.toString(path),
-									});
-									types.freezeObject(key); // Key is complete
-									const cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
-									if (cached.isValid()) {
+									let cached = null;
+									if (this.__cacheHandler) {
+										const key = this.__cacheHandler.createKey({
+											hash: type,
+											path: types.toString(path),
+										});
+										types.freezeObject(key); // Key is complete
+										cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
+									};
+									if (cached && cached.isValid()) {
 										return this.__cacheHandler.openFile(this.request, cached)
 											.then(function(cacheStream) {
 												if (cacheStream) {
 													// NOTE: "CacheStream" is binary.
-													const buf = cacheStream.read();
-													const hash = io.TextData.$decode(buf, 'ascii');
-													return hash;
+													return cacheStream.readAsync()
+														.then(function(buf) {
+															const promise = cacheStream.onEOF.promise()
+																.then(function() {
+																	const hash = io.TextData.$decode(buf, 'ascii');
+																	return hash;
+																});
+															cacheStream.flush({purge: true});
+															return promise;
+														});
 												} else {
 													return start.call(this); // cache file has been deleted
 												};
 											}, null, this);
 
-									} else if (cached.isInvalid()) {
+									} else if (cached && cached.isInvalid()) {
 										return getHash.call(this)
 											.then(function(hash) {
 												return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
 													.then(function(cacheStream) {
 														return cacheStream && cacheStream.writeAsync(hash)
 															.then(function() {
-																return cacheStream.writeAsync(io.EOF);
+																if (cacheStream) {
+																	// TODO: Write a helper for that, like ".end"
+																	if (cacheStream._implements(ioMixIns.BufferedStreamBase)) {
+																		return cacheStream.flushAsync({purge: true})
+																			.then(function() {
+																				if (cacheStream.canWrite()) {
+																					cacheStream.write(io.EOF);
+																					return cacheStream.flushAsync({purge: true});
+																				};
+																			});
+																	} else {
+																		return cacheStream.writeAsync(io.EOF);
+																	};
+																};
 															}, null, this)
 															.then(function() {
 																cached.validate();
@@ -273,7 +312,6 @@ module.exports = {
 																return hash;
 															}, null, this)
 															.catch(function(err) {
-																cacheStream.write(io.EOF);
 																cached.abort();
 																throw err;
 															}, this);
