@@ -195,7 +195,7 @@ module.exports = {
 						getScriptHeader: function getScriptHeader() {
 							// NOTE: Returns the header of the "renderTemplate" function
 							return (function() {
-								// Gives access to page object everywhere in "renderTemplate"
+								// Gives 'page' object everywhere in "renderTemplate" to avoid using 'this' which is less descriptive.
 								const page = this;
 							}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						},
@@ -208,8 +208,6 @@ module.exports = {
 						},
 						
 						parse: doodad.ASYNC(function parse(parentPath) {
-							// TODO: ES7 (async/await) when widely supported (both in all supported browsers & nodejs)
-							
 							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
 							
