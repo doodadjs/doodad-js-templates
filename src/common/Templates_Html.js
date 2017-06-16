@@ -236,7 +236,7 @@ module.exports = {
 							
 							const fnHeader = function fnHeader() {
 								if (!types.hasAsyncAwait()) {
-									codeParts[codeParts.length] = 'const pagePromise = Promise.resolve();';
+									codeParts[codeParts.length] = 'let pagePromise = Promise.resolve();';
 								};
 							};
 
