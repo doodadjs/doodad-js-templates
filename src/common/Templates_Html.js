@@ -179,7 +179,6 @@ module.exports = {
 						doc: null,
 						type: null,
 						options: null,
-						promise: null,
 						codeParts: null,
 						parents: null,
 						cache: true,
@@ -207,7 +206,7 @@ module.exports = {
 							return "";
 						},
 						
-						parse: doodad.ASYNC(function parse(parentPath) {
+						parse: function parse() {
 							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
 							
@@ -374,8 +373,8 @@ module.exports = {
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
 												const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
 												codeParts[codeParts.length] = ddi;
-												state.promises[state.promises.length] = ddi.promise;
-												ddi.parents.set(self, parentPath.toString());
+												state.promises[state.promises.length] = ddi.build();
+												ddi.parents.set(self, self.path.toString());
 											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
 												state.cacheId = child.getAttr('id');
 												const duration = child.getAttr("duration");
@@ -482,7 +481,7 @@ module.exports = {
 
 							const Promise = types.getPromise();
 							return Promise.all(state.promises);
-						}),
+						},
 
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super();
@@ -492,8 +491,11 @@ module.exports = {
 							this.name = path.file.replace(/[.]/g, '_');
 							this.path = path;
 							this.parents = new types.Map();
+						}),
+						
+						open: function open() {
 							const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
-							this.promise = files.openFile(path, {encoding: encoding})
+							return files.openFile(this.path, {encoding: encoding})
 								.then(function openFilePromise(stream) {
 									return xml.parse(stream, {discardEntities: true})
 										.then(function parseXmlPromise(doc) {
@@ -501,14 +503,15 @@ module.exports = {
 											this.doc = doc;
 								//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
-											return this.parse(path)
-												.then(function resultPromise() {
-													return this;
-												}, null, this);
+											return this.parse();
 										}, null, this);
 								}, null, this);
-						}),
-						
+						},
+
+						build: function() {
+							return this.open();
+						},
+
 						toString: function toString(/*optional*/level, /*optional*/writeHeader) {
 							let code = '';
 							if (types.isNothing(level)) {
@@ -556,38 +559,33 @@ module.exports = {
 					},
 					/*instanceProto*/
 					{
-						_new: types.SUPER(function _new(path, type, /*optional*/options) {
-							this._super(path, type, options);
-							
-							let code = '';
-							
-							this.promise = this.promise.then(function extendDDTPromise() {
-								const ddtNode = this.doc.getRoot(),
-									name = ddtNode.getAttr('type');
+						build: types.SUPER(function() {
+							return this._super()
+								.then(function extendDDTPromise() {
+									const ddtNode = this.doc.getRoot(),
+										name = ddtNode.getAttr('type');
 									
-								const type = namespaces.get(name);
+									const type = namespaces.get(name);
 								
-								root.DD_ASSERT && root.DD_ASSERT(types._implements(type, templatesHtml.PageTemplate), "Unknown page template '~0~'.", [name])
+									if (!types._implements(type, templatesHtml.PageTemplate)) {
+										throw new types.TypeError("Unknown page template '~0~'.", [name]);
+									};
 								
-								code = this.toString('', true);
-					//console.log(code);
-								const locals = this.getScriptVariables();
-								let fn = safeEval.createEval(types.keys(locals))
-								fn = fn.apply(null, types.values(locals));
-								fn = fn('(' + code + ')');
-					//console.log(fn);
+									const code = this.toString('', true);
+						//console.log(code);
+									const locals = this.getScriptVariables();
+									let fn = safeEval.createEval(types.keys(locals))
+									fn = fn.apply(null, types.values(locals));
+									fn = fn('(' + code + ')');
+						//console.log(fn);
 
-								return types.INIT(type.$extend(
-								{
-									$TYPE_NAME: '__' + type.$TYPE_NAME,
+									return types.INIT(type.$extend(
+									{
+										$TYPE_NAME: '__' + type.$TYPE_NAME,
 									
-									renderTemplate: doodad.OVERRIDE(fn),
-								}), [null, null, null, this]);
-							}, null, this)
-							.catch(function catchExtendDDTPromise(err) {
-								console.log(code);
-								throw err;
-							});
+										renderTemplate: doodad.OVERRIDE(fn),
+									}), [null, null, null, this]);
+								}, null, this);
 						}),
 					}
 				));
@@ -595,7 +593,7 @@ module.exports = {
 
 				templatesHtml.ADD('getTemplate', function getTemplate(path, /*optional*/options) {
 					const ddt = templatesHtml.DDT.$get(path, options);
-					return ddt.promise;
+					return ddt.build();
 				});
 				
 				
