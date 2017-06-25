@@ -74,8 +74,8 @@ module.exports = {
 							const type = types.getType(this);
 
 							const state = request.getHandlerState(cacheHandler);
-							state.defaultDisabled = !type.$ddt.cache;
-							state.defaultDuration = type.$ddt.cacheDuration;
+							state.defaultDisabled = !types.get(type.$options, 'cache', false);
+							state.defaultDuration = types.get(type.$options, 'cacheDuration', null);
 
 							_shared.setAttribute(this, 'request', request);
 						}),
@@ -141,7 +141,7 @@ module.exports = {
 											};
 										}, null, this);
 								} else if (cached && cached.isInvalid()) {
-									return this.__cacheHandler.createFile(this.request, cached, {encoding: type.$ddt.options.encoding, duration: duration})
+									return this.__cacheHandler.createFile(this.request, cached, {encoding: types.get(type.$options, 'encoding', 'utf-8'), duration: duration})
 										.then(function(cacheStream) {
 											this.__cacheStream = cacheStream;
 											// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
@@ -168,9 +168,7 @@ module.exports = {
 												}, null, this)
 												.then(function outputOnEOF(ev) {
 													cached.validate();
-													let listener;
-													type.$ddt.addEventListener('unload', listener = function(ev) {
-														type.$ddt.removeEventListener('unload', listener);
+													type.$onUnload.attachOnce(this, function(ev) {
 														cached.invalidate();
 													});
 												}, null, this)
@@ -300,10 +298,10 @@ module.exports = {
 															}, null, this)
 															.then(function() {
 																cached.validate();
-																let listener;
 																const type = types.getType(this);
-																type.$ddt.addEventListener('unload', listener = function(ev) {
-																	type.$ddt.removeEventListener('unload', listener);
+																let listener;
+																type.$onUnload.attachOnce(null, listener = function(ev) {
+																	type.$onUnload.detatch(null, listener);
 																	cached.invalidate();
 																});
 																if (root.getOptions().debug) {

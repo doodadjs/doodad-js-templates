@@ -94,13 +94,9 @@ module.exports = {
 						$TYPE_NAME: 'TemplateBase',
 						$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('TemplateBase')), true) */,
 
-						$ddt: doodad.PUBLIC(doodad.READ_ONLY(null)),
-						
-						$create: doodad.OVERRIDE(function $create(ddt) {
-							this._super();
-							
-							_shared.setAttribute(this, '$ddt', ddt);
-						}),
+						$onUnload: doodad.EVENT(false),
+
+						$options: doodad.PUBLIC(doodad.READ_ONLY( {} )),
 
 						renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),
 
@@ -222,8 +218,10 @@ module.exports = {
 							let cache = false;
 							let cacheDuration = null;
 							if (self.type === 'ddt') {
-								cache = types.toBoolean((self.type === 'ddt') && ddi.getAttr('cache') || 'false');
-								cacheDuration = ddi.getAttr('cacheDuration');
+								cache = types.toBoolean(ddi.getAttr('cache'));
+								if (cache) {
+									cacheDuration = types.toInteger(ddi.getAttr('cacheDuration'));
+								};
 							};
 
 							const writeHTML = function writeHTML(state) {
@@ -373,7 +371,7 @@ module.exports = {
 												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
 												const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
 												codeParts[codeParts.length] = ddi;
-												state.promises[state.promises.length] = ddi.build();
+												state.promises[state.promises.length] = ddi.open();
 												ddi.parents.set(self, self.path.toString());
 											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
 												state.cacheId = child.getAttr('id');
@@ -508,10 +506,6 @@ module.exports = {
 								}, null, this);
 						},
 
-						build: function() {
-							return this.open();
-						},
-
 						toString: function toString(/*optional*/level, /*optional*/writeHeader) {
 							let code = '';
 							if (types.isNothing(level)) {
@@ -559,9 +553,9 @@ module.exports = {
 					},
 					/*instanceProto*/
 					{
-						build: types.SUPER(function() {
-							return this._super()
-								.then(function extendDDTPromise() {
+						build: function() {
+							return this.open()
+								.then(function() {
 									const ddtNode = this.doc.getRoot(),
 										name = ddtNode.getAttr('type');
 									
@@ -579,14 +573,86 @@ module.exports = {
 									fn = fn('(' + code + ')');
 						//console.log(fn);
 
-									return types.INIT(type.$extend(
+									const templ = types.INIT(type.$extend(
 									{
 										$TYPE_NAME: '__' + type.$TYPE_NAME,
+
+										$options: {
+											cache: this.cache,
+											cacheDuration: this.cacheDuration,
+											encoding: this.options.encoding,
+										},
 									
 										renderTemplate: doodad.OVERRIDE(fn),
 									}), [null, null, null, this]);
+
+									let listener;
+									this.addEventListener('unload', listener = function(ev) {
+										this.removeEventListener('unload', listener);
+										types.invoke(templ, '$onUnload', null, _shared.SECRET);
+									});
+								
+									return templ;
 								}, null, this);
-						}),
+						},
+
+						compile: function() {
+							return this.open()
+								.then(function() {
+									const ddtNode = this.doc.getRoot(),
+										name = ddtNode.getAttr('type');
+									
+									const code = this.toString('', true),
+										modName = name + '.ddt';
+
+									return "//! BEGIN_MODULE()" + "\n" +
+										"module.exports = {" + "\n" +
+											"\t" + "add: function add(DD_MODULES) {" + "\n" +
+												"\t\t" + "DD_MODULES = (DD_MODULES || {});" + "\n" +
+												"\t\t" + "DD_MODULES[" + types.toSource(modName) + "] = {" + "\n" +
+													"\t\t\t" + "version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST(\"name\")))) */ null /*! END_REPLACE()*/," + "\n" +
+													"\t\t\t" + "dependencies: ['Doodad.Tools.SafeEval'],"
+													"\t\t\t" + "create: function create(root, /*optional*/_options, _shared) {" + "\n" +
+														"\t\t\t\t" + "\"use strict\";" + "\n" +
+														"\n" +
+														"\t\t\t\t" + "const me = root." + modName + "," + "\n" +
+														"\t\t\t\t\t" + "types = root.Doodad.Types," + "\n" +
+														"\t\t\t\t\t" + "namespaces = root.Doodad.Namespaces," + "\n" +
+														"\t\t\t\t\t" + "safeEval = root.Doodad.Tools.SafeEval;" + "\n" +
+														"\n" +
+														"\t\t\t\t" + "me.ADD('get', function get() {" + "\n" +
+															"\t\t\t\t\t" + "const type = namespaces.get(" + types.toSource(name) + ");" + "\n" +
+															"\n" +
+															"\t\t\t\t\t" + "if (!types._implements(type, templatesHtml.PageTemplate)) {" + "\n" +
+																"\t\t\t\t\t\t" + "throw new types.TypeError(\"Unknown page template '~0~'.\", [name]);" + "\n" +
+															"\t\t\t\t\t" + "};" + "\n" +
+															"\n" +
+															"\t\t\t\t\t" + "const locals = ???????.getScriptVariables();" + "\n" +
+															"\t\t\t\t\t" + "let fn = safeEval.createEval(types.keys(locals));" + "\n" +
+															"\t\t\t\t\t" + "fn = fn.apply(null, types.values(locals));" + "\n" +
+															"\t\t\t\t\t" + "fn = fn(" + types.toSource('(' + code + ')') + ");" + "\n" +
+															"\n" +
+															"\t\t\t\t\t" + "return types.INIT(type.$extend(" + "\n" +
+															"\t\t\t\t\t" + "{" + "\n" +
+																"\t\t\t\t\t\t" + "$TYPE_NAME: '__' + type.$TYPE_NAME," + "\n" +
+																"\n" +
+																"\t\t\t\t\t\t" + "$options: {" + "\n" +
+																	"\t\t\t\t\t\t\t" + "cache: " + types.toSource(this.cache) + "," + "\n" +
+																	"\t\t\t\t\t\t\t" + "cacheDuration: " + types.toSource(this.cacheDuration) + "," + "\n" +
+																	"\t\t\t\t\t\t\t" + "encoding: " + types.toSource(this.options.encoding) + "," + "\n" +
+																"\t\t\t\t\t\t" + "}," + "\n" +
+																"\n" +
+																"\t\t\t\t\t\t" + "renderTemplate: doodad.OVERRIDE(fn)," + "\n" +
+															"\t\t\t\t\t" + "}));" + "\n" +
+														"\t\t\t\t" + "})" + "\n" +
+													"\t\t\t" + "}," + "\n" +
+												"\t\t" + "};" + "\n" +
+												"\t\t" + "return DD_MODULES;" + "\n" +
+											"\t" + "}," + "\n" +
+										"};" + "\n" +
+										"//! END_MODULE()"
+								}, null, this);
+						},
 					}
 				));
 			
