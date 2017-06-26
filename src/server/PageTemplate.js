@@ -168,7 +168,7 @@ module.exports = {
 												}, null, this)
 												.then(function outputOnEOF(ev) {
 													cached.validate();
-													type.$onUnload.attachOnce(this, function(ev) {
+													type.$onUnload.attachOnce(null, function(ev) {
 														cached.invalidate();
 													});
 												}, null, this)
@@ -301,7 +301,7 @@ module.exports = {
 																const type = types.getType(this);
 																let listener;
 																type.$onUnload.attachOnce(null, listener = function(ev) {
-																	type.$onUnload.detatch(null, listener);
+																	type.$onUnload.detach(null, listener);
 																	cached.invalidate();
 																});
 																if (root.getOptions().debug) {
