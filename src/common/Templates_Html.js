@@ -678,30 +678,49 @@ module.exports = {
 
 				templatesHtml.ADD('getTemplate', function getTemplate(/*optional*/module, path, /*optional*/options) {
 					const Promise = types.getPromise();
+
 					return Promise.try(function() {
 						path = files.parseLocation(path);
-						if (path.extension === 'ddtx') {
-							const key = path.toApiString();
-							if (types.has(__Internal__.ddtxCache, key)) {
-								return __Internal__.ddtxCache[key];
+
+						const key = path.toApiString();
+						if (types.has(__Internal__.ddtxCache, key)) {
+							return __Internal__.ddtxCache[key];
+						};
+
+						const loadFile = function loadFile(path) {
+							if (path.extension === 'ddtx') {
+								return Promise.all([
+										Promise.create(function(resolve, reject) {
+											templatesDDTS.addEventListener('newDDT', function(ev) {
+												resolve(ev.detail);
+											});
+										}),
+										modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}}),
+									])
+									.then(function(results) {
+										const ddtx = __Internal__.ddtxCache[key] = results[0];
+										return ddtx;
+									});
+							} else {
+								return modules.locate(module, path)
+									.then(function(resolvedPath) {
+										const ddt = templatesHtml.DDT.$get(resolvedPath, options);
+										return ddt.build();
+									});
 							};
-							return Promise.all([
-									Promise.create(function(resolve, reject) {
-										templatesDDTS.addEventListener('newDDT', function(ev) {
-											resolve(ev.detail);
-										});
-									}),
-									modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}}),
-								])
-								.then(function(results) {
-									const ddtx = __Internal__.ddtxCache[key] = results[0];
-									return ddtx;
-								});
+						};
+
+						if (path.extension === 'ddtx') {
+							return loadFile(path);
 						} else {
-							return modules.locate(module, path)
-								.then(function(resolvedPath) {
-									const ddt = templatesHtml.DDT.$get(resolvedPath, options);
-									return ddt.build();
+							const pathDDTX = path.set({extension: 'ddtx'});
+							return files.existsAsync(pathDDTX, {type: 'file'})
+								.then(function(exists) {
+									if (exists) {
+										return loadFile(pathDDTX);
+									} else {
+										return loadFile(path);
+									};
 								});
 						};
 					});
