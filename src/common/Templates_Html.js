@@ -647,9 +647,10 @@ module.exports = {
 							};
 						};
 
-						if (path.extension === 'ddtx') {
+						if ((path.extension === 'ddtx') || (root.getOptions().fromSource)) {
 							return loadFile(path);
 						} else {
+							// NOTE: Use "exists" because loading the script with the browser doesn't tell if it 404.
 							const pathDDTX = path.set({extension: 'ddtx'});
 							return files.existsAsync(pathDDTX, {type: 'file'})
 								.then(function(exists) {
