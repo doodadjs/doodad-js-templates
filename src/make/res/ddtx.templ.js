@@ -26,7 +26,7 @@ module.exports = {
 
 					/*! INJECT(VAR("ddtVariables")) */
 
-					const ddtx = templatesDDTX.REGISTER(type.$extend(
+					return templatesDDTX.REGISTER(type.$extend(
 						{
 							$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtxTypeName"))) */,
 
@@ -38,11 +38,13 @@ module.exports = {
 
 							renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
 						}));
-
-						templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: ddtx}));
 				};
 
-				__Internal__.createDDTX();
+				try {
+					templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: {ddtx: __Internal__.createDDTX(), error: null}}));
+				} catch(ex) {
+					templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: {ddtx: null, error: ex}}));
+				};
 			},
 		};
 		return DD_MODULES;

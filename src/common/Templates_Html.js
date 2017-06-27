@@ -629,7 +629,11 @@ module.exports = {
 								return Promise.all([
 										Promise.create(function(resolve, reject) {
 											templatesDDTX.addEventListener('newDDTX', function(ev) {
-												resolve(ev.detail);
+												if (ev.detail.error) {
+													reject(ev.detail.error);
+												} else {
+													resolve(ev.detail.ddtx);
+												};
 											});
 										}),
 										modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}}),
