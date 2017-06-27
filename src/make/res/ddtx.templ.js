@@ -28,7 +28,7 @@ module.exports = {
 
 					return templatesDDTX.REGISTER(type.$extend(
 						{
-							$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/[.]/g, "_"))) */,
+							$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
 
 							$options: {
 								cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
