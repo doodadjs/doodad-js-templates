@@ -95,7 +95,6 @@ module.exports = {
 								const variables = types.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
 									ddtType: ddtType,
 									ddtVariables: ddt.getScriptVariables(),
-									ddtxTypeName: ddtType.replace(/\./g, "_"),
 									cacheEnabled: ddt.cache,
 									cacheDuration: ddt.cacheDuration,
 									encoding: ddt.options.encoding,
