@@ -29,7 +29,7 @@ module.exports = {
 		DD_MODULES = (DD_MODULES || {});
 		DD_MODULES['Doodad.Templates.Html'] = {
 			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
-			namespaces: ['DDTS'],
+			namespaces: ['DDTX'],
 			create: function create(root, /*optional*/_options, _shared) {
 				"use strict";
 				
@@ -49,7 +49,7 @@ module.exports = {
 					xml = tools.Xml,
 					templates = doodad.Templates,
 					templatesHtml = templates.Html,
-					templatesDDTS = templatesHtml.DDTS;
+					templatesDDTX = templatesHtml.DDTX;
 				
 				
 				const __Internal__ = {
@@ -566,7 +566,7 @@ module.exports = {
 										name = ddtNode.getAttr('type'),
 										templName = name.replace(/\./g, "_");
 									
-									let templ = types.get(templatesDDTS, templName);
+									let templ = types.get(templatesDDTX, templName);
 									if (templ) {
 										return templ;
 									};
@@ -585,7 +585,7 @@ module.exports = {
 									fn = fn('(function() {' + this.getScriptVariables() + ';\nreturn (' + code + ')})()');
 						//console.log(fn);
 
-									templ = templatesDDTS.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
+									templ = templatesDDTX.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
 									{
 										$TYPE_NAME: templName,
 
@@ -602,74 +602,11 @@ module.exports = {
 									this.addEventListener('unload', listener = function(ev) {
 										this.removeEventListener('unload', listener);
 										_shared.invoke(templ, '$onUnload', null, _shared.SECRET);
-										templatesDDTS.UNREGISTER(templ);
+										templatesDDTX.UNREGISTER(templ);
 										types.DESTROY(templ);
 									});
 								
 									return templ;
-								}, null, this);
-						},
-
-						compile: function() {
-							return this.open()
-								.then(function() {
-									const ddtNode = this.doc.getRoot(),
-										name = ddtNode.getAttr('type');
-									
-									const code = this.toString('', true);
-
-									// Generates code for .ddtx files.
-									// TODO: Put this code into a js template file.
-									// TODO: Make "renderTemplate" more natural (instead of using safeEval, write function body directly).
-									return "//! BEGIN_MODULE()" + "\n" +
-										"module.exports = {" + "\n" +
-											"\t" + "add: function add(DD_MODULES) {" + "\n" +
-												"\t\t" + "DD_MODULES = (DD_MODULES || {});" + "\n" +
-												"\t\t" + "DD_MODULES[" + types.toSource(templatesDDTS.DD_FULL_NAME + '/' + name) + "] = {" + "\n" +
-													"\t\t\t" + "version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST(\"name\")))) */ null /*! END_REPLACE()*/," + "\n" +
-													"\t\t\t" + "create: function create(root, /*optional*/_options, _shared) {" + "\n" +
-														"\t\t\t\t" + "\"use strict\";" + "\n" +
-														"\n" +
-														"\t\t\t\t" + "const doodad = root." + doodad.DD_FULL_NAME + "," + "\n" +
-															"\t\t\t\t\t" + "types = root." + types.DD_FULL_NAME + "," + "\n" +
-															"\t\t\t\t\t" + "namespaces = root." + namespaces.DD_FULL_NAME + "," + "\n" +
-															"\t\t\t\t\t" + "templatesHtml = root." + templatesHtml.DD_FULL_NAME + "," + "\n" +
-															"\t\t\t\t\t" + "templatesDDTS = root." + templatesDDTS.DD_FULL_NAME + ";" + "\n" +
-														"\n" +
-														"\t\t\t\t" + "const __Internal__ = {};" + "\n" +
-														"\n" +
-														// Create a function to isolate variables of "this.getScriptVariables()"
-														"\t\t\t\t" + "__Internal__.createDDT = function() {" + "\n" +
-															"\t\t\t\t\t" + "const type = namespaces.get(" + types.toSource(name) + ");" + "\n" +
-															"\n" +
-															"\t\t\t\t\t" + "if (!types._implements(type, templatesHtml.PageTemplate)) {" + "\n" +
-																"\t\t\t\t\t\t" + "throw new types.TypeError(\"Unknown page template '~0~'.\", [name]);" + "\n" +
-															"\t\t\t\t\t" + "};" + "\n" +
-															"\n" +
-															this.getScriptVariables() +
-															"\n" +
-															"\t\t\t\t\t" + "const ddt = templatesDDTS.REGISTER(type.$extend(" + "\n" +
-															"\t\t\t\t\t" + "{" + "\n" +
-																"\t\t\t\t\t\t" + "$TYPE_NAME: " + types.toSource(name.replace(/\./g, "_")) + "," + "\n" +
-																"\n" +
-																"\t\t\t\t\t\t" + "$options: {" + "\n" +
-																	"\t\t\t\t\t\t\t" + "cache: " + types.toSource(this.cache) + "," + "\n" +
-																	"\t\t\t\t\t\t\t" + "cacheDuration: " + types.toSource(this.cacheDuration) + "," + "\n" +
-																	"\t\t\t\t\t\t\t" + "encoding: " + types.toSource(this.options.encoding) + "," + "\n" +
-																"\t\t\t\t\t\t" + "}," + "\n" +
-																"\n" +
-																"\t\t\t\t\t\t" + "renderTemplate: doodad.OVERRIDE(" + code + ")," + "\n" +
-															"\t\t\t\t\t" + "}));" + "\n" +
-															"\t\t\t\t\t" + "templatesDDTS.dispatchEvent(new types.CustomEvent('newDDT', {detail: ddt}));" + "\n" +
-														"\t\t\t\t" + "}" + "\n" +
-														"\n" +
-														"\t\t\t\t" + "__Internal__.createDDT()" + "\n" +
-													"\t\t\t" + "}," + "\n" +
-												"\t\t" + "};" + "\n" +
-												"\t\t" + "return DD_MODULES;" + "\n" +
-											"\t" + "}," + "\n" +
-										"};" + "\n" +
-										"//! END_MODULE()"
 								}, null, this);
 						},
 					}
@@ -691,7 +628,7 @@ module.exports = {
 							if (path.extension === 'ddtx') {
 								return Promise.all([
 										Promise.create(function(resolve, reject) {
-											templatesDDTS.addEventListener('newDDT', function(ev) {
+											templatesDDTX.addEventListener('newDDTX', function(ev) {
 												resolve(ev.detail);
 											});
 										}),
@@ -723,16 +660,6 @@ module.exports = {
 									};
 								});
 						};
-					});
-				});
-
-
-				templatesHtml.ADD('compileTemplate', function compileTemplate(location, /*optional*/options) {
-					const Promise = types.getPromise();
-					return Promise.try(function() {
-						location = files.parseLocation(location);
-						const ddt = templatesHtml.DDT.$get(location, options);
-						return ddt.compile();
 					});
 				});
 

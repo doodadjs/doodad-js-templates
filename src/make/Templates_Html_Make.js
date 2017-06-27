@@ -48,6 +48,7 @@ module.exports = {
 					nodejs = doodad.NodeJs,
 					files = tools.Files,
 					make = root.Make,
+					file = make.File,
 					io = doodad.IO,
 					minifiers = io.Minifiers,
 					templates = doodad.Templates,
@@ -67,8 +68,8 @@ module.exports = {
 				// Internal
 				//===================================
 					
-				const __Internal__ = {
-				};
+				//const __Internal__ = {
+				//};
 				
 				
 				templatesHtmlMake.REGISTER(make.Operation.$extend(
@@ -83,46 +84,31 @@ module.exports = {
 
 						console.info(tools.format("Compiling template '~0~' to '~1~'...", [source, dest]));
 
-						const variables = types.extend({
-							task: command,
-						}, types.get(item, 'variables'), types.get(options, 'variables'));
+						const minify = types.get(item, 'minify', false);
 
-						return templatesHtml.compileTemplate(source, item)
-							.thenCreate(function(code, resolve, reject) {
-								const minify = types.get(item, 'minify', false);
+						const ddt = templatesHtml.DDT.$get(source, options);
 
-								const outputStream = nodeFs.createWriteStream(dest.toApiString());
+						return ddt.open()
+							.then(function(dummy) {
+								const ddtType = ddt.doc.getRoot().getAttr('type');
 
-								const builder = new make.JavascriptBuilder({taskData: this.taskData, runDirectives: true, keepComments: !minify, keepSpaces: !minify});
-
-								tools.forEach(variables, function(value, name) {
-									builder.define(name, value);
+								const variables = types.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
+									ddtType: ddtType,
+									ddtVariables: ddt.getScriptVariables(),
+									ddtxTypeName: ddtType.replace(/\./g, "_"),
+									cacheEnabled: ddt.cache,
+									cacheDuration: ddt.cacheDuration,
+									encoding: ddt.options.encoding,
+									renderTemplateBody: ddt.toString('', true),
 								});
 
-								const cleanup = function() {
-									types.DESTROY(builder);
-									types.DESTROY(outputStream);
+								return {
+									'class': file.Javascript,
+									source: '~doodad-js-templates/src/make/res/ddtx.templ.js',
+									destination: dest,
+									runDirectives: true,
+									variables: variables,
 								};
-
-								builder.onError.attachOnce(this, function(ev) {
-									cleanup();
-									reject(ev.error);
-								});
-
-								outputStream
-									.once('close', () => {
-										cleanup();
-										resolve();
-									})
-									.once('error', err => {
-										cleanup();
-										reject(err);
-									});
-
-								builder.pipe(outputStream);
-
-								builder.write(code);
-								builder.write(io.EOF);
 							}, this);
 					}),
 				}));
