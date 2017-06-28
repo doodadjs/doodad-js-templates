@@ -653,12 +653,13 @@ module.exports = {
 							};
 						};
 
+						let promise = null;
 						if ((path.extension === 'ddtx') || (root.getOptions().fromSource)) {
-							return loadFile(path);
+							promise = loadFile(path);
 						} else {
 							// NOTE: Use "exists" because loading the script with the browser doesn't tell if it 404.
 							const pathDDTX = path.set({extension: 'ddtx'});
-							return files.existsAsync(pathDDTX, {type: 'file'})
+							promise = files.existsAsync(pathDDTX, {type: 'file'})
 								.then(function(exists) {
 									if (exists) {
 										return loadFile(pathDDTX);
@@ -667,6 +668,20 @@ module.exports = {
 									};
 								});
 						};
+
+						// Temporary store the Promise so that another call requiring the same DDT/DDTX will not get duplicated.
+						__Internal__.ddtxCache[key] = promise;
+
+						return promise.nodeify(function(err, ddtx) {
+							// Get rid of the Promise and store the value instead.
+							if (err) {
+								delete __Internal__.ddtxCache[key];
+								throw err;
+							} else {
+								__Internal__.ddtxCache[key] = ddtx;
+								return ddtx;
+							};
+						});
 					});
 				});
 
