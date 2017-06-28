@@ -629,14 +629,16 @@ module.exports = {
 								return Promise.all([
 										Promise.create(function(resolve, reject) {
 											templatesDDTX.addEventListener('newDDTX', function(ev) {
-												if (ev.detail.error) {
-													reject(ev.detail.error);
-												} else {
-													resolve(ev.detail.ddtx);
+												if (ev.detail.id === key) {
+													if (ev.detail.error) {
+														reject(ev.detail.error);
+													} else {
+														resolve(ev.detail.ddtx);
+													};
 												};
 											});
 										}),
-										modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}}),
+										modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, global: {ddtxId: key}}),
 									])
 									.then(function(results) {
 										const ddtx = __Internal__.ddtxCache[key] = results[0];

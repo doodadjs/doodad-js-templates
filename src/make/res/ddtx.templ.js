@@ -41,9 +41,9 @@ module.exports = {
 				};
 
 				try {
-					templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: {ddtx: __Internal__.createDDTX(), error: null}}));
+					templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: {id: types.get(_options, 'ddtxId'), ddtx: __Internal__.createDDTX(), error: null}}));
 				} catch(ex) {
-					templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: {ddtx: null, error: ex}}));
+					templatesDDTX.dispatchEvent(new types.CustomEvent('newDDTX', {detail: {id: types.get(_options, 'ddtxId'), ddtx: null, error: ex}}));
 				};
 			},
 		};
