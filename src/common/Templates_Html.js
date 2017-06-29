@@ -619,7 +619,9 @@ module.exports = {
 					return Promise.try(function() {
 						path = files.parseLocation(path);
 
-						const key = path.toApiString();
+						const pathDDTX = path.set({extension: 'ddtx'});
+
+						const key = pathDDTX.toApiString();
 						if (types.has(__Internal__.ddtxCache, key)) {
 							return __Internal__.ddtxCache[key];
 						};
@@ -654,11 +656,10 @@ module.exports = {
 						};
 
 						let promise = null;
-						if ((path.extension === 'ddtx') || (root.getOptions().fromSource)) {
+						if ((path.extension === 'ddtx') || root.getOptions().fromSource) {
 							promise = loadFile(path);
 						} else {
 							// NOTE: Use "exists" because loading the script with the browser doesn't tell if it 404.
-							const pathDDTX = path.set({extension: 'ddtx'});
 							promise = files.existsAsync(pathDDTX, {type: 'file'})
 								.then(function(exists) {
 									if (exists) {
