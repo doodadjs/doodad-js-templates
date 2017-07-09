@@ -33,6 +33,7 @@ module.exports = {
 				'doodad-js-make',
 				'doodad-js-minifiers',
 				'doodad-js-templates',
+				'doodad-js-xml',
 			],
 			
 			create: function create(root, /*optional*/_options, _shared) {
@@ -54,6 +55,7 @@ module.exports = {
 					templates = doodad.Templates,
 					templatesHtml = templates.Html,
 					templatesHtmlMake = templatesHtml.Make,
+					xml = tools.Xml,
 					
 					nodeFs = require('fs');
 
@@ -83,6 +85,10 @@ module.exports = {
 						const dest = this.taskData.parseVariables(item.destination, { isPath: true });
 
 						console.info(tools.format("Compiling template '~0~' to '~1~'...", [source, dest]));
+
+						if (!xml.isAvailable({schemas: true})) {
+							console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable it.");
+						};
 
 						const minify = types.get(item, 'minify', false);
 
