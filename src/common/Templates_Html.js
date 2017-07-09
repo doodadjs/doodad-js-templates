@@ -53,6 +53,7 @@ module.exports = {
 				
 				
 				const __Internal__ = {
+					entities: null,
 					templatesCached: types.nullObject(),
 					ddtxCache: types.nullObject(),
 				};
@@ -509,7 +510,7 @@ module.exports = {
 										if (xsdRoot) {
 											xsd = xsdRoot.combine(_shared.pathParser(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
 										};
-										return xml.parse(stream, {discardEntities: true, xsd: xsd});
+										return xml.parse(stream, {entities: __Internal__.entities, discardEntities: true, xsd: xsd});
 									}, null, this);
 									return promise
 										.then(function parseXmlPromise(doc) {
@@ -697,12 +698,6 @@ module.exports = {
 				});
 
 
-				// TODO: Find a better name
-				templatesHtml.ADD('isAvailable', function isAvailable() {
-					return xml.isAvailable();
-				});
-				
-				
 				//===================================
 				// Init
 				//===================================
@@ -715,7 +710,7 @@ module.exports = {
 										newEntities[name.replace(/[&;]/g, '')] = value.characters;
 										return newEntities;
 									}, {});
-									xml.addXmlEntities(entities);
+									__Internal__.entities = entities;
 								};
 							}});
 						});
