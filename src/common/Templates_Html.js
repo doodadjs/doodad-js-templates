@@ -77,7 +77,7 @@ module.exports = {
 						return Promise.try(function tryLocate() {
 							const path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
 								.set({file: null})
-								.combine(_shared.pathParser(__options__.resourcesPath))
+								.combine(_shared.pathParser(__options__.resourcesPath), {includePathInRoot: true})
 								.combine(_shared.pathParser(fileName));
 							return path;
 						});
@@ -285,7 +285,6 @@ module.exports = {
 							// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
 							// TODO: More XML validation
 							// TODO: Throw XML validation errors
-							// TODO: Validation by XSL ?
 
 							const parseNode = function parseNode(node, state) {
 								node.getChildren().forEach(function forEachChild(child, pos, ar) {
@@ -501,11 +500,22 @@ module.exports = {
 							const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
 							return files.openFile(this.path, {encoding: encoding})
 								.then(function openFilePromise(stream) {
-									return xml.parse(stream, {discardEntities: true})
+									let promise = Promise.resolve(null);
+									if (root.serverSide && root.getOptions().debug) {
+										promise = __Internal__.resourcesLoader.locate('./schemas/');
+									};
+									promise = promise.then(function(xsdRoot) {
+										let xsd = null;
+										if (xsdRoot) {
+											xsd = xsdRoot.combine(_shared.pathParser(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
+										};
+										return xml.parse(stream, {discardEntities: true, xsd: xsd});
+									}, null, this);
+									return promise
 										.then(function parseXmlPromise(doc) {
 											types.DESTROY(stream);
 											this.doc = doc;
-								//console.log(require('util').inspect(this.doc));
+//console.log(require('util').inspect(this.doc));
 											this.codeParts = [];
 											return this.parse();
 										}, null, this);
