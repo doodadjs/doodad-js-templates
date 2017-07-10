@@ -87,7 +87,7 @@ module.exports = {
 						console.info(tools.format("Compiling template '~0~' to '~1~'...", [source, dest]));
 
 						if (!xml.isAvailable({schemas: true})) {
-							console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable it.");
+							console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
 						};
 
 						const minify = types.get(item, 'minify', false);
