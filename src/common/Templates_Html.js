@@ -502,7 +502,7 @@ module.exports = {
 							return files.openFile(this.path, {encoding: encoding})
 								.then(function openFilePromise(stream) {
 									let promise = Promise.resolve(null);
-									if (root.serverSide && root.getOptions().debug) {
+									if (xml.isAvailable({schemas: true})) {
 										promise = __Internal__.resourcesLoader.locate('./schemas/');
 									};
 									promise = promise.then(function(xsdRoot) {
