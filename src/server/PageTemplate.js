@@ -39,6 +39,7 @@ module.exports = {
 				const doodad = root.Doodad,
 					types = doodad.Types,
 					tools = doodad.Tools,
+					namespaces = doodad.Namespaces,
 					templates = doodad.Templates,
 					templatesHtml = templates.Html,
 					io = doodad.IO,
@@ -202,7 +203,11 @@ module.exports = {
 									if (err) {
 										reject(err);
 									} else {
-										resolve(hashStream.digest(list[1]));
+										try {
+											resolve(hashStream.digest(list[1]));
+										} catch(ex) {
+											reject(ex);
+										};
 									};
 									types.DESTROY(fileStream);
 									types.DESTROY(hashStream);
@@ -225,109 +230,114 @@ module.exports = {
 						})),
 
 						getIntegrityValue: doodad.PROTECTED(doodad.ASYNC(function getIntegrityValue(type, url) {
+							url = _shared.urlParser(url);
 							type = type.split(',')[0];
 
-							const handlerState = this.request.getHandlerState();
+							//const handlerState = this.request.getHandlerState();
 
 							// TODO: Combine URLs with "baseURI" attribute or "base" element if present
-							url = handlerState.matcherResult.url.combine(url);
+							const fullUrl = this.request.url.set({file: null}).combine(url);
 
-							const handler = this.request.resolve(url, 'Doodad.Server.Http.StaticPage');
+							return this.request.resolve(fullUrl, 'Doodad.Server.Http.StaticPage')
+								.then(function(handler) {
+									if (handler) {
+										const path = handler.getSystemPath(this.request, fullUrl);
 
-							if (handler) {
-								const path = handler.getSystemPath(this.request, url);
+										const getHash = function getHash() {
+											return this.getFileHash(type + ',base64', path)
+												.then(function(hash) {
+													return (type + '-' + hash);
+												})
+												.catch(function(err) {
+													throw new types.Error("Can't get the integrity value of the file at the URL '~0~' : ~1~.", [url, err]);
+												});
+										};
 
-								const getHash = function getHash() {
-									return this.getFileHash(type + ',base64', path)
-										.then(function(hash) {
-											return (type + '-' + hash);
-										});
-								};
-
-								const start = function start() {
-									let cached = null;
-									if (this.__cacheHandler) {
-										const key = this.__cacheHandler.createKey({
-											hash: type,
-											path: types.toString(path),
-										});
-										types.freezeObject(key); // Key is complete
-										cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
-									};
-									if (cached && cached.isValid()) {
-										return this.__cacheHandler.openFile(this.request, cached)
-											.then(function(cacheStream) {
-												if (cacheStream) {
-													// NOTE: "CacheStream" is binary.
-													return cacheStream.readAsync()
-														.then(function(buf) {
-															const promise = cacheStream.onEOF.promise()
-																.then(function() {
-																	const hash = io.TextData.$decode(buf, 'ascii');
-																	return hash;
-																});
-															cacheStream.flush({purge: true});
-															return promise;
-														});
-												} else {
-													return start.call(this); // cache file has been deleted
-												};
-											}, null, this);
-
-									} else if (cached && cached.isInvalid()) {
-										return getHash.call(this)
-											.then(function(hash) {
-												return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
+										const start = function start() {
+											let cached = null;
+											if (this.__cacheHandler) {
+												const key = this.__cacheHandler.createKey({
+													hash: type,
+													path: types.toString(path),
+												});
+												types.freezeObject(key); // Key is complete
+												cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
+											};
+											if (cached && cached.isValid()) {
+												return this.__cacheHandler.openFile(this.request, cached)
 													.then(function(cacheStream) {
-														return cacheStream && cacheStream.writeAsync(hash)
-															.then(function() {
-																if (cacheStream) {
-																	// TODO: Write a helper for that, like ".end"
-																	if (cacheStream._implements(ioMixIns.BufferedStreamBase)) {
-																		return cacheStream.flushAsync({purge: true})
-																			.then(function() {
-																				if (cacheStream.canWrite()) {
-																					cacheStream.write(io.EOF);
-																					return cacheStream.flushAsync({purge: true});
-																				};
-																			});
-																	} else {
-																		return cacheStream.writeAsync(io.EOF);
-																	};
-																};
-															}, null, this)
-															.then(function() {
-																cached.validate();
-																const type = types.getType(this);
-																let listener;
-																type.$onUnload.attachOnce(null, listener = function(ev) {
-																	type.$onUnload.detach(null, listener);
-																	cached.invalidate();
+														if (cacheStream) {
+															// NOTE: "CacheStream" is binary.
+															return cacheStream.readAsync()
+																.then(function(buf) {
+																	const promise = cacheStream.onEOF.promise()
+																		.then(function() {
+																			const hash = io.TextData.$decode(buf, 'ascii');
+																			return hash;
+																		});
+																	cacheStream.flush({purge: true});
+																	return promise;
 																});
-																if (root.getOptions().debug) {
-																	files.watch(path, listener, {once: true});
-																};
-																return hash;
+														} else {
+															return start.call(this); // cache file has been deleted
+														};
+													}, null, this);
+
+											} else if (cached && cached.isInvalid()) {
+												return getHash.call(this)
+													.then(function(hash) {
+														return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
+															.then(function(cacheStream) {
+																return cacheStream && cacheStream.writeAsync(hash)
+																	.then(function() {
+																		if (cacheStream) {
+																			// TODO: Write a helper for that, like ".end"
+																			if (cacheStream._implements(ioMixIns.BufferedStreamBase)) {
+																				return cacheStream.flushAsync({purge: true})
+																					.then(function() {
+																						if (cacheStream.canWrite()) {
+																							cacheStream.write(io.EOF);
+																							return cacheStream.flushAsync({purge: true});
+																						};
+																					});
+																			} else {
+																				return cacheStream.writeAsync(io.EOF);
+																			};
+																		};
+																	}, null, this)
+																	.then(function() {
+																		cached.validate();
+																		const type = types.getType(this);
+																		let listener;
+																		type.$onUnload.attachOnce(null, listener = function(ev) {
+																			type.$onUnload.detach(null, listener);
+																			cached.invalidate();
+																		});
+																		if (root.getOptions().debug) {
+																			files.watch(path, listener, {once: true});
+																		};
+																		return hash;
+																	}, null, this)
+																	.catch(function(err) {
+																		cached.abort();
+																		throw err;
+																	}, this);
 															}, null, this)
-															.catch(function(err) {
-																cached.abort();
-																throw err;
-															}, this);
-													}, null, this)
-											}, null, this);
+													}, null, this);
 
+											} else {
+												return getHash.call(this);
+
+											};
+										};
+										return start.call(this);
 									} else {
-										return getHash.call(this);
-
+										throw new types.Error("Can't resolve URL '~0~'.", [url]);
 									};
-								};
-								return start.call(this);
-							} else {
-								throw new types.Error("Can't resolve URL '~0~'.", [url]);
-							};
+								}, null, this);
 						})),
 
-						compileIntegrityAttr: doodad.OVERRIDE(function asyncCompileAttr(key, value, src) {
+						compileIntegrityAttr: doodad.OVERRIDE(function compileIntegrityAttr(key, value, src) {
 							const Promise = types.getPromise();
 							if (!this.__compiledAttrs) {
 								this.__compiledAttrs = types.nullObject();
