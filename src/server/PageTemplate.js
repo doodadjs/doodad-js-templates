@@ -230,7 +230,7 @@ module.exports = {
 						})),
 
 						getIntegrityValue: doodad.PROTECTED(doodad.ASYNC(function getIntegrityValue(type, url) {
-							url = _shared.urlParser(url);
+							url = files.parseUrl(url);
 							type = type.split(',')[0];
 
 							//const handlerState = this.request.getHandlerState();

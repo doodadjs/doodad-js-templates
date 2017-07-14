@@ -78,8 +78,8 @@ module.exports = {
 						return Promise.try(function tryLocate() {
 							const path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
 								.set({file: null})
-								.combine(_shared.pathParser(__options__.resourcesPath), {includePathInRoot: true})
-								.combine(_shared.pathParser(fileName));
+								.combine(files.parsePath(__options__.resourcesPath), {includePathInRoot: true})
+								.combine(files.parsePath(fileName));
 							return path;
 						});
 					},
@@ -515,7 +515,7 @@ module.exports = {
 									promise = promise.then(function(xsdRoot) {
 										let xsd = null;
 										if (xsdRoot) {
-											xsd = xsdRoot.combine(_shared.pathParser(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
+											xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
 										};
 										return xml.parse(stream, {entities: __Internal__.entities, discardEntities: true, xsd: xsd});
 									}, null, this);
