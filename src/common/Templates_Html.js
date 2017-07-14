@@ -388,16 +388,21 @@ module.exports = {
 												state.cacheId = null;
 											};
 										} else if (ns === HTML_URI) {
-											if ((!state.isIf) && (child.getName() === 'html') && (self.type === 'ddi')) {
+											if ((!state.isIf) && (name === 'html') && (self.type === 'ddi')) {
 												parseNode(child, state);
 											} else if (!state.isIf) {
 												if (name === 'head') {
 													state.isHead = true;
-												} else if (state.isHead && (child.getName() === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
+												} else if (state.isHead && (name === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
 													state.hasCharset = true;
 												};
 												const attrs = child.getAttrs();
 												state.html += '<' + name;
+												if (name === 'script') {
+													if (child.hasAttr('async')) {
+														state.html += ' async';
+													};
+												};
 												if (tools.findItem(attrs, function(attr) {
 													return (attr.getBaseURI() === DDT_URI);
 												}) === null) {
@@ -413,21 +418,23 @@ module.exports = {
 														const key = attr.getName(),
 															value = attr.getValue(),
 															compute = (attr.getBaseURI() === DDT_URI);
-														let integrity = null;
+														const integrities = [];
 														if (compute) {
+															let integrity = null;
 															if ((name === 'script') && (key === 'integrity')) {
 																integrity = 'src';
 															} else if ((name === 'link') && (key === 'integrity')) {
 																integrity = 'href';
 															};
 															if (integrity) {
-																codeParts[codeParts.length] = 'page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');';
+																integrities[integrities.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ')});');
 															} else {
 																codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileAttr(' + types.toSource(key) + ',(' + value + '))});');
 															};
 														} else {
-															codeParts[codeParts.length] = 'page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');';
+															codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ')});');
 														};
+														types.append(codeParts, integrities);
 													}, this);
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 												};
