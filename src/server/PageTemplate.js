@@ -121,13 +121,18 @@ module.exports = {
 							return fn.call(this);
 						}),
 
-						asyncCache: doodad.OVERRIDE(function asyncStartCache(id, duration, fn) {
+						asyncCache: doodad.OVERRIDE(function asyncCache(id, duration, fn) {
 							const Promise = types.getPromise();
 							const type = types.getType(this);
 							const start = function start() {
 								let cached = null;
 								if (this.__cacheHandler) {
-									cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: id});
+									const sectionKey = this.__cacheHandler.createKey({
+										type: 'cacheSection',
+										id: id,
+									});
+									types.freezeObject(sectionKey);   // key is complete
+									cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: sectionKey});
 								};
 								if (cached && cached.isValid()) {
 									return this.__cacheHandler.openFile(this.request, cached)
@@ -141,7 +146,7 @@ module.exports = {
 												return start.call(this); // cache file has been deleted
 											};
 										}, null, this);
-								} else if (cached && cached.isInvalid()) {
+								} else if (cached && cached.isInvalid() && (this.request.verb !== 'HEAD')) {
 									return this.__cacheHandler.createFile(this.request, cached, {encoding: types.get(type.$options, 'encoding', 'utf-8'), duration: duration})
 										.then(function(cacheStream) {
 											this.__cacheStream = cacheStream;
@@ -253,7 +258,7 @@ module.exports = {
 												});
 										};
 
-										const start = function start() {
+										const start = function _start() {
 											let cached = null;
 											if (this.__cacheHandler) {
 												const key = this.__cacheHandler.createKey({
@@ -262,6 +267,26 @@ module.exports = {
 												});
 												types.freezeObject(key); // Key is complete
 												cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
+
+												if (cached.created) {
+													const type = types.getType(this);
+													let onUnloadListener = null;
+
+													cached.addEventListener('validate', function onvalidate() {
+														type.$onUnload.attachOnce(null, onUnloadListener = function(ev) {
+															cached.invalidate();
+														});
+														if (root.getOptions().debug) {
+															files.watch(path, onUnloadListener, {once: true});
+														};
+													});
+
+													cached.addEventListener('invalidate', function oninvalidate() {
+														files.unwatch(path, onUnloadListener);
+														type.$onUnload.detach(null, onUnloadListener);
+														onUnloadListener = null;
+													});
+												};
 											};
 											if (cached && cached.isValid()) {
 												return this.__cacheHandler.openFile(this.request, cached)
@@ -283,7 +308,7 @@ module.exports = {
 														};
 													}, null, this);
 
-											} else if (cached && cached.isInvalid()) {
+											} else if (cached && cached.isInvalid() && (this.request.verb !== 'HEAD')) {
 												return getHash.call(this)
 													.then(function(hash) {
 														return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
@@ -307,15 +332,6 @@ module.exports = {
 																	}, null, this)
 																	.then(function() {
 																		cached.validate();
-																		const type = types.getType(this);
-																		let listener;
-																		type.$onUnload.attachOnce(null, listener = function(ev) {
-																			type.$onUnload.detach(null, listener);
-																			cached.invalidate();
-																		});
-																		if (root.getOptions().debug) {
-																			files.watch(path, listener, {once: true});
-																		};
 																		return hash;
 																	}, null, this)
 																	.catch(function(err) {
@@ -379,10 +395,12 @@ module.exports = {
 								};
 								return Promise.resolve(attr)
 									.then(function(value) {
-										entry[1] = value;
-										return this.asyncWrite(' ' + tools.escapeHtml(types.toString(entry[0])) + '="' + tools.escapeHtml(types.toString(value)) + '"');
+										const name = entry[0];
+										compiledAttrs[name] = value;
+										return this.asyncWrite(' ' + tools.escapeHtml(types.toString(name)) + '="' + tools.escapeHtml(types.toString(value)) + '"');
 									}, null, this);
 							}, {thisObj: this});
+							//.catch(err => {console.error(err); throw err});
 						}),
 					})));
 				
