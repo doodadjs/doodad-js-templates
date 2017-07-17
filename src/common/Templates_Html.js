@@ -288,6 +288,8 @@ module.exports = {
 							// TODO: Throw XML validation errors
 
 							const parseNode = function parseNode(node, state) {
+								let hasVariables = false;
+										
 								node.getChildren().forEach(function forEachChild(child, pos, ar) {
 									if (child instanceof xml.Element) {
 										const name = child.getName(),
@@ -300,7 +302,7 @@ module.exports = {
 											state.html += '<!DOCTYPE html>\n'
 											state.hasDocType = true;
 										};
-										
+
 										if (ns === DDT_URI) {
 											writeHTML(state);
 											writeAsyncWrites(state);
@@ -363,10 +365,14 @@ module.exports = {
 													codeParts[codeParts.length] = endAsync(');');
 												};
 											} else if ((!state.isIf) && (name === 'variable') && child.hasAttr('name') && child.hasAttr('expr')) {
-												// TODO: Combine "variable" tags
-												// FUTURE: "let" but must check if already defined in scope
+												// TODO: Fix identation
 												const name = (child.getAttr('name') || 'x');
-												codeParts[codeParts.length] = ('var ' + name + ' = null;');
+												if (!hasVariables) {
+													hasVariables = true;
+													codeParts[codeParts.length] = startAsync('page.asyncScript(');
+													startFn();
+												};
+												codeParts[codeParts.length] = ('let ' + name + ' = null;');
 												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
 											} else if ((!state.isIf) && (name === 'include') && child.hasAttr('src')) {
 												let path = child.getAttr('src');
@@ -427,12 +433,12 @@ module.exports = {
 																integrity = 'href';
 															};
 															if (integrity) {
-																integrities[integrities.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ')});');
+																integrities[integrities.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');');
 															} else {
-																codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileAttr(' + types.toSource(key) + ',(' + value + '))});');
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
 															};
 														} else {
-															codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ')});');
+															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');');
 														};
 														types.append(codeParts, integrities);
 													}, this);
@@ -464,6 +470,11 @@ module.exports = {
 										state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
 									};
 								}, this);
+
+								if (hasVariables) {
+									endFn();
+									codeParts[codeParts.length] = endAsync(');');
+								};
 							};
 							
 							const state = {
