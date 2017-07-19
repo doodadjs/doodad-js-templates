@@ -413,9 +413,11 @@ module.exports = {
 													return (attr.getBaseURI() === DDT_URI);
 												}) === null) {
 													attrs.forEach(function forEachAttr(attr) {
-														const key = attr.getName(),
-															value = attr.getValue();
-														state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
+														const key = attr.getName();
+														if (key !== 'async') {
+															const value = attr.getValue();
+															state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
+														};
 													}, this);
 												} else {
 													writeHTML(state);
@@ -434,10 +436,10 @@ module.exports = {
 															};
 															if (integrity) {
 																integrities[integrities.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');');
-															} else {
+															} else if (key !== 'async') {
 																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
 															};
-														} else {
+														} else if (key !== 'async') {
 															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');');
 														};
 														types.append(codeParts, integrities);
