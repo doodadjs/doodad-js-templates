@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<xs:schema 
-	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+<xs:schema
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:c="http://www.doodad-js.local/schemas/common"
 	xmlns:h="http://www.doodad-js.local/schemas/html5"
-	xmlns:t="http://www.doodad-js.local/schemas/ddt" 
-	xmlns:i="http://www.doodad-js.local/schemas/ddi" 
-	version="1.0" 
+	xmlns:t="http://www.doodad-js.local/schemas/ddt"
+	xmlns:i="http://www.doodad-js.local/schemas/ddi"
+	version="1.0"
 	targetNamespace="http://www.doodad-js.local/schemas/ddi"
 >
 
-<!--
+  <!--
 	 doodad-js  -  Object-oriented programming framework
 	 File: ddi.xsd - DDI schema file
 	 Project home: https://github.com/doodadjs/
@@ -33,18 +34,19 @@
 		limitations under the License.
 -->
 
-    <xs:import namespace="http://www.doodad-js.local/schemas/html5" schemaLocation="html5_ddt.xsd" />
-    <xs:import namespace="http://www.doodad-js.local/schemas/ddt" schemaLocation="ddt-elements.xsd" />
+  <xs:import namespace="http://www.doodad-js.local/schemas/common"	schemaLocation="common_ddt.xsd"/>
+  <xs:import namespace="http://www.doodad-js.local/schemas/html5" schemaLocation="html5_ddt.xsd" />
+  <xs:import namespace="http://www.doodad-js.local/schemas/ddt" schemaLocation="ddt-elements.xsd" />
 
-
-    <xs:element name="ddi">
-		<xs:complexType>
-		<xs:sequence>
-			<xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
-			<xs:element ref="h:html" minOccurs="1" maxOccurs="1"  />
-			<xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
-		</xs:sequence>
-		</xs:complexType>
-    </xs:element>
+  <xs:element name="ddi">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="t:variable" minOccurs="0" maxOccurs="1" />
+        <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
+        <xs:element name="body" type="c:container_element_type" form="qualified" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 
 </xs:schema>

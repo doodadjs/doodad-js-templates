@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<xs:schema 
-	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+<xs:schema
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:c="http://www.doodad-js.local/schemas/common"
 	xmlns:h="http://www.doodad-js.local/schemas/html5"
-	xmlns:t="http://www.doodad-js.local/schemas/ddt" 
-	version="1.0" 
-	targetNamespace="http://www.doodad-js.local/schemas/ddt">
+	xmlns:t="http://www.doodad-js.local/schemas/ddt"
+	targetNamespace="http://www.doodad-js.local/schemas/ddt"
+	version="1.0"
+>
 
-
-<!--
+  <!--
 	 doodad-js  -  Object-oriented programming framework
 	 File: ddt.xsd - DDT schema file
 	 Project home: https://github.com/doodadjs/
@@ -32,24 +33,47 @@
 		limitations under the License.
 -->
 
-    <xs:import namespace="http://www.doodad-js.local/schemas/html5" schemaLocation="html5_ddt.xsd" />
-    <xs:include schemaLocation="ddt-elements.xsd" />
+  <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="common_ddt.xsd" />
+  <xs:import namespace="http://www.doodad-js.local/schemas/html5" schemaLocation="html5_ddt.xsd" />
+  
+  <!-- For libxml2 -->
+  <xs:include schemaLocation="ddt-elements.xsd" />
 
-    <xs:element name="doctype" type="xs:string" default="html" />
+  <xs:element name="ddt">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="doctype" type="xs:string" form="qualified" default="html" minOccurs="0" maxOccurs="1" />
+        <xs:element ref="t:variable" minOccurs="0" maxOccurs="1" />
+        <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
+        <xs:element name="html" type="h:html_type" form="qualified" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
+      </xs:sequence>
+      <xs:attribute name="type" type="xs:string" use="required"/>
+      <xs:attribute name="cache" type="xs:boolean" default="true"/>
+      <xs:attribute name="cacheDuration" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
 
-    <xs:element name="ddt">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
-				<xs:element ref="t:doctype" minOccurs="0" maxOccurs="1" />
-				<xs:element ref="h:html" minOccurs="1" maxOccurs="1"  />
-				<xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
-			</xs:sequence>
-			<xs:attribute name="type" type="xs:string" use="required"/>
-			<xs:attribute name="cache" type="xs:boolean" default="true"/>
-			<xs:attribute name="cacheDuration" type="xs:string"/>
-		</xs:complexType>
-    </xs:element>
+  <!--
+  <xs:complexType name="head_group_elements_type">
+    <xs:choice>
+      <xs:group ref="h:head_group" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="t:head_group" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
 
-
+  <xs:group name="head_group">
+    <xs:choice>
+      <xs:element name="cache" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="for-each" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="if" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="variable" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="when-false" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="when-true" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="widget" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
+  </xs:group>
+  -->
+  
 </xs:schema>

@@ -1,13 +1,15 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-  xmlns="http://www.doodad-js.local/schemas/html5"
-  targetNamespace="http://www.doodad-js.local/schemas/html5"
+	xmlns="http://www.doodad-js.local/schemas/html5"
+	xmlns:c="http://www.doodad-js.local/schemas/common"
+	xmlns:h="http://www.doodad-js.local/schemas/html5"
+	targetNamespace="http://www.doodad-js.local/schemas/common"
   version="1.0"
 >
-
   <!--
+
 	 doodad-js  -  Object-oriented programming framework
-	 File: html5.xsd - HTML5 schema file
+	 File: common_ddt.xsd- COMMON + HTML5 schema file
 	 Project home: https://github.com/doodadjs/
 	 Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
 	 Author: Claude Petit, Quebec city
@@ -28,31 +30,27 @@
 		WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 		See the License for the specific language governing permissions and
 		limitations under the License.
-  -->
+-->
 
-  <xs:redefine schemaLocation="html5_base.xsd">
-    
-    <xs:complexType name="colgroup_type" mixed="true">
-      <xs:complexContent>
-        <xs:extension base="colgroup_type">
-          <xs:choice>
-            <xs:group ref="all_elements_group" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:choice>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
+  <xs:import namespace="http://www.doodad-js.local/schemas/html5"	schemaLocation="../html5/html5_base.xsd"/>
 
-    <xs:complexType name="tr_type" mixed="true">
+  <!-- <PRB> "redefine" gives an infinite loop with libxml2 ! See "../ddt/common_ddt.xsd" and "../html5/common_html5.xsd" -->
+  <xs:include schemaLocation="../common/common.xsd" />
+
+  <!-- <PRB> "redefine" gives an infinite loop with libxml2 ! See "../ddt/common_ddt.xsd" and "../html5/common_html5.xsd"
+  <xs:redefine schemaLocation="../common/common.xsd">
+
+    <xs:complexType name="container_element_type" mixed="true">
       <xs:complexContent>
-        <xs:extension base="tr_type">
-          <xs:choice>
-            <xs:element ref="td" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element ref="th" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:extension base="c:container_element_type">
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:group ref="h:all_elements_group" minOccurs="0" maxOccurs="unbounded"/>
           </xs:choice>
         </xs:extension>
       </xs:complexContent>
     </xs:complexType>
 
   </xs:redefine>
-
+ -->
+  
 </xs:schema>

@@ -1,0 +1,213 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns="http://www.doodad-js.local/schemas/html5"
+  xmlns:c="http://www.doodad-js.local/schemas/common"
+  targetNamespace="http://www.doodad-js.local/schemas/html5"
+  version="1.0"
+>
+
+  <!--
+	 doodad-js  -  Object-oriented programming framework
+	 File: html5_elements.xsd - HTML5 misc elements schema file
+	 Project home: https://github.com/doodadjs/
+	 Trunk: svn checkout svn://svn.code.sf.net/p/doodad-js/code/trunk doodad-js-code
+	 Author: Claude Petit, Quebec city
+	 Contact: doodadjs [at] gmail.com
+	 Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !
+	 License: Apache V2
+	
+		Copyright 2015-2017 Claude Petit
+	
+		Licensed under the Apache License, Version 2.0 (the "License");
+		you may not use this file except in compliance with the License.
+		You may obtain a copy of the License at
+	
+			http://www.apache.org/licenses/LICENSE-2.0
+	
+		Unless required by applicable law or agreed to in writing, software
+		distributed under the License is distributed on an "AS IS" BASIS,
+		WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+		See the License for the specific language governing permissions and
+		limitations under the License.
+  -->
+
+  <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="../common/common.xsd" />
+
+  <xs:element name="a" type="c:container_element_type" />
+  <xs:element name="abbr" type="c:container_element_type" />
+  <xs:element name="address" type="c:container_element_type" />
+  <xs:element name="area" type="c:container_element_type" />
+  <xs:element name="article" type="c:container_element_type" />
+  <xs:element name="aside" type="c:container_element_type" />
+  <xs:element name="audio" type="c:container_element_type" />
+  <xs:element name="b" type="c:container_element_type" />
+  <xs:element name="bdi" type="c:container_element_type" />
+  <xs:element name="bdo" type="c:container_element_type" />
+  <xs:element name="blockquote" type="c:container_element_type" />
+  <xs:element name="br" type="c:closed_element_type" />
+  <xs:element name="canvas" type="c:closed_element_type" />
+  <xs:element name="cite" type="c:container_element_type" />
+  <xs:element name="code" type="c:container_element_type" />
+  <xs:element name="data" type="c:container_element_type" />
+  <xs:element name="datalist" type="c:container_element_type" />
+  <xs:element name="dd" type="c:container_element_type" />
+  <xs:element name="del" type="c:container_element_type" />
+  <xs:element name="dfn" type="c:container_element_type" />
+  <xs:element name="div" type="c:container_element_type" />
+  <xs:element name="dl" type="c:container_element_type" />
+  <xs:element name="d" type="c:container_element_type" />
+  <xs:element name="em" type="c:container_element_type" />
+  <xs:element name="embed" type="c:container_element_type" />
+  <xs:element name="figcaption" type="c:container_element_type" />
+  <xs:element name="figure" type="c:container_element_type" />
+  <xs:element name="h1" type="c:container_element_type" />
+  <xs:element name="h2" type="c:container_element_type" />
+  <xs:element name="h3" type="c:container_element_type" />
+  <xs:element name="h4" type="c:container_element_type" />
+  <xs:element name="h5" type="c:container_element_type" />
+  <xs:element name="h6" type="c:container_element_type" />
+  <xs:element name="hr" type="c:closed_element_type" />
+  <xs:element name="i" type="c:container_element_type" />
+  <xs:element name="iframe" type="c:container_element_type" />
+  <xs:element name="img" type="c:container_element_type" />
+  <xs:element name="ins" type="c:container_element_type" />
+  <xs:element name="kbd" type="c:container_element_type" />
+  <xs:element name="keygen" type="c:container_element_type" />
+  <xs:element name="legend" type="c:container_element_type" />
+  <xs:element name="li" type="c:container_element_type" />
+  <xs:element name="main" type="c:container_element_type" />
+  <xs:element name="map" type="c:container_element_type" />
+  <xs:element name="mark" type="c:container_element_type" />
+  <xs:element name="menu" type="c:container_element_type" />
+  <xs:element name="menuitem" type="c:container_element_type" />
+  <xs:element name="meter" type="c:container_element_type" />
+  <xs:element name="nav" type="c:container_element_type" />
+  <xs:element name="noscript" type="c:container_element_type" />
+
+  <xs:element name="object">
+    <xs:complexType mixed="true">
+      <xs:choice>
+        <xs:element name="param" form="qualified" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType mixed="true">
+            <xs:anyAttribute processContents="lax"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+      <xs:anyAttribute processContents="lax"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="ol" type="c:container_element_type" />
+  <xs:element name="p" type="c:container_element_type" />
+  <xs:element name="pre" type="c:container_element_type" />
+  <xs:element name="progress" type="c:container_element_type" />
+  <xs:element name="q" type="c:container_element_type" />
+  <xs:element name="rb" type="c:container_element_type" />
+  <xs:element name="rp" type="c:container_element_type" />
+  <xs:element name="rt" type="c:container_element_type" />
+  <xs:element name="rtc" type="c:container_element_type" />
+  <xs:element name="ruby" type="c:container_element_type" />
+  <xs:element name="s" type="c:container_element_type" />
+  <xs:element name="samp" type="c:container_element_type" />
+  <xs:element name="script" type="c:string_element_type" />
+  <xs:element name="small" type="c:container_element_type" />
+  <xs:element name="source" type="c:container_element_type" />
+  <xs:element name="span" type="c:container_element_type" />
+  <xs:element name="strong" type="c:container_element_type" />
+  <xs:element name="style" type="c:container_element_type" /> <!-- TODO: Own type-->
+  <xs:element name="sub" type="c:container_element_type" />
+  <xs:element name="sup" type="c:container_element_type" />
+  <xs:element name="template" type="c:container_element_type" />
+  <xs:element name="time" type="c:container_element_type" />
+  <xs:element name="track" type="c:container_element_type" />
+  <xs:element name="u" type="c:container_element_type" />
+  <xs:element name="ul" type="c:container_element_type" />
+  <xs:element name="var" type="c:container_element_type" />
+  <xs:element name="video" type="c:container_element_type" /> <!-- TODO: Own type -->
+  <xs:element name="wbr" type="c:container_element_type" />
+
+  <xs:group name="elements_group">
+    <xs:choice>
+      <xs:element ref="a" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="abbr" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="address" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="area" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="article" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="aside" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="audio" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="b" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="bdi" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="bdo" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="blockquote" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="br" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="canvas" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="cite" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="code" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="d" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="data" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="datalist" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="dd" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="del" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="dfn" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="div" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="dl" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="em" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="embed" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="figcaption" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="figure" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="h1" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="h2" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="h3" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="h4" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="h5" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="h6" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="hr" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="i" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="iframe" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="img" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="ins" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="kbd" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="keygen" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="legend" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="li" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="main" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="map" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="mark" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="menu" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="menuitem" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="meter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="nav" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="noscript" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="object" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="ol" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="p" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="pre" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="progress" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="q" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="rb" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="rp" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="rt" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="rtc" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="ruby" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="s" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="samp" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="script" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="small" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="source" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="span" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="strong" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="style" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="sub" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="sup" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="template" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="time" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="track" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="u" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="ul" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="var" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="video" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="wbr" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+  </xs:group>
+
+</xs:schema>

@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns="http://www.doodad-js.local/schemas/ddt"
+	xmlns:c="http://www.doodad-js.local/schemas/common"
+	xmlns:t="http://www.doodad-js.local/schemas/ddt"
 	targetNamespace="http://www.doodad-js.local/schemas/ddt"
-	xmlns:t="http://www.doodad-js.local/schemas/ddt">
-
+  version="1.0"
+>
 
 	<!--
 	 doodad-js  -  Object-oriented programming framework
@@ -30,7 +33,10 @@
 		limitations under the License.
 -->
 
-	<xs:element name="script">
+  <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="common_ddt.xsd" />
+  <xs:import namespace="http://www.doodad-js.local/schemas/html5"	schemaLocation="html5_ddt.xsd"/>
+
+  <xs:element name="script">
 		<xs:complexType>
 			<xs:simpleContent>
 				<xs:extension base="xs:string">
@@ -40,9 +46,7 @@
 		</xs:complexType>
 	</xs:element>
 
-
 	<xs:element name="eval" type="xs:string"/>
-
 
 	<xs:element name="include" nillable="true">
 		<xs:complexType>
@@ -60,23 +64,25 @@
 		</xs:complexType>
 	</xs:element>
 
-	<xs:element name="for-each">
-		<xs:complexType>
-			<xs:sequence maxOccurs="1">
-				<xs:any namespace="##any" maxOccurs="unbounded"/>
-			</xs:sequence>
-			<xs:attribute name="items" type="xs:string"/>
-			<xs:attribute name="item" type="xs:string" default="item"/>
-			<xs:attribute name="key" type="xs:string" default="key"/>
-		</xs:complexType>
-	</xs:element>
-
+  <xs:element name="for-each">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="c:container_element_type">
+			    <xs:attribute name="items" type="xs:string"/>
+			    <xs:attribute name="item" type="xs:string" default="item"/>
+			    <xs:attribute name="key" type="xs:string" default="key"/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
 
 	<xs:complexType name="when_type">
-		<xs:sequence maxOccurs="1">
-			<xs:any namespace="##any" maxOccurs="unbounded"/>
-		</xs:sequence>
-	</xs:complexType>
+    <xs:complexContent>
+      <xs:extension base="c:container_element_type">
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
 	<xs:element name="when-true">
 		<xs:complexType>
 			<xs:complexContent>
@@ -86,6 +92,7 @@
 			</xs:complexContent>
 		</xs:complexType>
 	</xs:element>
+  
 	<xs:element name="when-false">
 		<xs:complexType>
 			<xs:complexContent>
@@ -95,6 +102,7 @@
 			</xs:complexContent>
 		</xs:complexType>
 	</xs:element>
+  
 	<xs:element name="if">
 		<xs:complexType>
 			<xs:sequence maxOccurs="1">
@@ -104,6 +112,7 @@
 			<xs:attribute name="expr" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
+  
 	<xs:element name="variable">
 		<xs:complexType>
 			<xs:sequence maxOccurs="unbounded">
@@ -115,12 +124,27 @@
 
   <xs:element name="cache">
     <xs:complexType>
-      <xs:sequence maxOccurs="1">
-        <xs:any namespace="##any" maxOccurs="unbounded"/>
-      </xs:sequence>
-      <xs:attribute name="id" type="xs:string" use="required"/>
-      <xs:attribute name="duration" type="xs:string"/>
+      <xs:complexContent>
+        <xs:extension base="c:container_element_type">
+          <xs:attribute name="id" type="xs:string" use="required"/>
+          <xs:attribute name="duration" type="xs:string"/>
+        </xs:extension>
+      </xs:complexContent>
     </xs:complexType>
   </xs:element>
 
+  <xs:group name="elements_group">
+    <xs:choice>
+      <xs:element ref="t:cache" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:eval" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:for-each" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:if" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:include" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:variable" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:when-false" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:when-true" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="t:widget" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
+  </xs:group>
+  
 </xs:schema>

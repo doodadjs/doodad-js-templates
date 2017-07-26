@@ -1,11 +1,17 @@
 FILES
 =================
-entities.json     : Copyright W3C. http://www.w3.org/TR/html5-author/entities.json. Contains some additional entities to XHTML 1.
-html5.dtd         : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 entities DTD, no element.
-html5.xsd         : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
-xhtml-lat1.ent    : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
-xhtml-special.ent : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
-xhtml-symbol.ent  : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
+common_html5.xsd   : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+entities.json      : Copyright W3C. http://www.w3.org/TR/html5-author/entities.json. Contains some additional entities to XHTML 1.
+html5.dtd          : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 entities DTD, no element.
+html5.xsd          : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+html5_base.xsd     : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+html5_elements.xsd : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+html5_forms.xsd    : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+html5_sections.xsd : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+html5_tables.xsd   : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
+xhtml-lat1.ent     : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
+xhtml-special.ent  : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
+xhtml-symbol.ent   : Copyright W3C. http://www.w3.org/TR/xhtml1-schema/. Old XHTML 1 entities.
 
 NOTES
 =====

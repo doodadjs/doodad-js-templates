@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns="http://www.doodad-js.local/schemas/html5"
   targetNamespace="http://www.doodad-js.local/schemas/html5"
@@ -30,29 +30,19 @@
 		limitations under the License.
   -->
 
-  <xs:redefine schemaLocation="html5_base.xsd">
-    
-    <xs:complexType name="colgroup_type" mixed="true">
-      <xs:complexContent>
-        <xs:extension base="colgroup_type">
-          <xs:choice>
-            <xs:group ref="all_elements_group" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:choice>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
+  <xs:include schemaLocation="html5_root.xsd" />
+  <xs:include schemaLocation="html5_elements.xsd" />
+  <xs:include schemaLocation="html5_forms.xsd" />
+  <xs:include schemaLocation="html5_sections.xsd" />
+  <xs:include schemaLocation="html5_tables.xsd" />
 
-    <xs:complexType name="tr_type" mixed="true">
-      <xs:complexContent>
-        <xs:extension base="tr_type">
-          <xs:choice>
-            <xs:element ref="td" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element ref="th" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:choice>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
-
-  </xs:redefine>
-
+  <xs:group name="all_elements_group">
+    <xs:choice>
+      <xs:group ref="elements_group" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="forms_group" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="sections_group" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="tables_group" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
+  </xs:group>
+  
 </xs:schema>

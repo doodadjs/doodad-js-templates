@@ -206,6 +206,9 @@ module.exports = {
 						},
 						
 						parse: function parse() {
+							const Promise = types.getPromise();
+
+							const DDI_URI = "http://www.doodad-js.local/schemas/ddi"
 							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
 							
@@ -284,8 +287,7 @@ module.exports = {
 							};
 							
 							// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
-							// TODO: More XML validation
-							// TODO: Throw XML validation errors
+							// TODO: SafeEval on expressions
 
 							const parseNode = function parseNode(node, state) {
 								let hasVariables = false;
@@ -295,126 +297,134 @@ module.exports = {
 										const name = child.getName(),
 											ns = child.getBaseURI();
 
-										if ((ns === DDT_URI) && (name === 'doctype') && !state.hasDocType) {
-											state.html += '<!DOCTYPE ' + (child.getValue() || 'html') + '>\n'
-											state.hasDocType = true;
-										} else if (!state.hasDocType) {
-											state.html += '<!DOCTYPE html>\n'
-											state.hasDocType = true;
-										};
-
-										if (ns === DDT_URI) {
+										if (ns === DDI_URI) {
+											if (name === 'body') {
+												parseNode(child, state);
+											};
+										} else if (ns === DDT_URI) {
 											writeHTML(state);
 											writeAsyncWrites(state);
-											if ((!state.isIf) && (name === 'script') && child.getChildren().getAt(0)) {
-												const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
-												if (vars.length) {
-													codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
-												};
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
-											} else if ((!state.isIf) && (name === 'for-each') && child.hasAttr('items') && child.hasAttr('item')) {
-												codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
-												startFn(child.getAttr('item') || 'item');
-												parseNode(child, state);
-												writeHTML(state);
-												writeAsyncWrites(state);
-												endFn();
-												codeParts[codeParts.length] = endAsync(');');
-											} else if ((!state.isIf) && (name === 'eval') && child.getChildren().getAt(0)) {
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
-											} else if ((!state.isIf) && (name === 'if') && child.hasAttr('expr')) {
-												codeParts[codeParts.length] = startAsync('page.asyncScript(');
-												const newState = types.extend({}, state, {isIf: true});
-												startFn();
-												codeParts[codeParts.length] = ('var __expr__ = !!(' + (child.getAttr('expr') || 'false') + ');');
-												parseNode(child, newState);
-												writeHTML(newState);
-												writeAsyncWrites(newState);
-												endFn();
-												codeParts[codeParts.length] = endAsync(');');
-											} else if (name === 'when-true' && child.hasAttr('expr')) {
+											if (name === 'when-true') {
 												if (!state.isIf) {
-													codeParts[codeParts.length] = startAsync('page.asyncScript(function() {');
-													startFn();
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
+													};
+													codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
 												};
-												codeParts[codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
-												codeParts[codeParts.length] = ('if (__expr__) {');
+												codeParts[codeParts.length] = 'if (__expr__) {';
 												const newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												codeParts[codeParts.length] = ('};');
+												codeParts[codeParts.length] = '};';
+											} else if (name === 'when-false') {
 												if (!state.isIf) {
-													endFn();
-													codeParts[codeParts.length] = endAsync(');');
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
+													};
+													codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
 												};
-											} else if (name === 'when-false' && child.hasAttr('expr')) {
-												if (!state.isIf) {
-													codeParts[codeParts.length] = startAsync('page.asyncScript(function() {');
-													startFn();
-												};
-												codeParts[codeParts.length] = ('var __expr__ = !!(' + child.getAttr('expr') + ');');
-												codeParts[codeParts.length] = ('if (!__expr__) {');
+												codeParts[codeParts.length] = 'if (!__expr__) {';
 												const newState = types.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-												codeParts[codeParts.length] = ('};');
-												if (!state.isIf) {
+												codeParts[codeParts.length] = '};';
+											} else if (!state.isIf) {
+												if (name === 'html') {
+													parseNode(child, state);
+												} else if (name === 'if') {
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
+													};
+													codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
+													const newState = types.extend({}, state, {isIf: true});
+													parseNode(child, newState);
+													writeHTML(newState);
+													writeAsyncWrites(newState);
+												} else if (name === 'script') {
+													const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
+													if (vars.length) {
+														codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
+													};
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
+												} else if (name === 'for-each') {
+													codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
+													startFn(child.getAttr('item') || 'item');
+													parseNode(child, state);
+													writeHTML(state);
+													writeAsyncWrites(state);
 													endFn();
 													codeParts[codeParts.length] = endAsync(');');
-												};
-											} else if ((!state.isIf) && (name === 'variable') && child.hasAttr('name') && child.hasAttr('expr')) {
-												// TODO: Fix identation
-												const name = (child.getAttr('name') || 'x');
-												if (!hasVariables) {
-													hasVariables = true;
-													codeParts[codeParts.length] = startAsync('page.asyncScript(');
+												} else if (name === 'eval') {
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
+												} else if (name === 'variable') {
+													// TODO: Fix identation
+													const name = (child.getAttr('name') || 'x');
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
+													};
+													codeParts[codeParts.length] = ('let ' + name + ' = null;');
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
+												} else if (name === 'include') {
+													let path = child.getAttr('src');
+													path = self.path.set({file: null}).combine(path);
+													const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
+													codeParts[codeParts.length] = ddi;
+													state.promises[state.promises.length] = ddi.open();
+													ddi.parents.set(self, self.path.toString());
+												} else if ((name === 'cache') && !state.cacheId) {
+													state.cacheId = child.getAttr('id');
+													const duration = child.getAttr("duration");
+													codeParts[codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
 													startFn();
+													parseNode(child, state);
+													writeHTML(state);
+													writeAsyncWrites(state);
+													endFn();
+													codeParts[codeParts.length] = endAsync(');');
+													state.cacheId = null;
 												};
-												codeParts[codeParts.length] = ('let ' + name + ' = null;');
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
-											} else if ((!state.isIf) && (name === 'include') && child.hasAttr('src')) {
-												let path = child.getAttr('src');
-												path = self.path.set({file: null}).combine(path, {isRelative: true, os: 'linux'});
-												const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
-												codeParts[codeParts.length] = ddi;
-												state.promises[state.promises.length] = ddi.open();
-												ddi.parents.set(self, self.path.toString());
-											} else if ((!state.isIf) && (name === 'cache') && child.hasAttr('id') && !state.cacheId) {
-												state.cacheId = child.getAttr('id');
-												const duration = child.getAttr("duration");
-												codeParts[codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
-												startFn();
-												parseNode(child, state);
-												writeHTML(state);
-												writeAsyncWrites(state);
-												endFn();
-												codeParts[codeParts.length] = endAsync(');');
-												state.cacheId = null;
 											};
 										} else if (ns === HTML_URI) {
-											if ((!state.isIf) && (name === 'html') && (self.type === 'ddi')) {
-												parseNode(child, state);
-											} else if (!state.isIf) {
+											if (!state.isIf) {
+												let addCharset = false;
 												if (name === 'head') {
-													state.isHead = true;
-												} else if (state.isHead && (name === 'meta') && (child.hasAttr('charset') || (child.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
-													state.hasCharset = true;
+													// TODO: Replace by an XPATH search when they will be available in doodad-js-xml.
+													const metaNodes = child.getChildren().find('meta');
+													const len = metaNodes.length;
+													addCharset = true;
+													for (let i = 0; i < len; i++) {
+														const metaNode = metaNodes[i];
+														if (metaNode.hasAttr('charset') || (metaNode.hasAttr('http-equiv') && (metaNode.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
+															addCharset = false;
+															break;
+														};
+													};
 												};
-												const attrs = child.getAttrs();
 												state.html += '<' + name;
+												const ignoreAttrs = [];
 												if (name === 'script') {
 													if (child.hasAttr('async')) {
 														state.html += ' async';
+														ignoreAttrs.push('async');
 													};
 												};
+												const attrs = child.getAttrs();
 												if (tools.findItem(attrs, function(attr) {
 													return (attr.getBaseURI() === DDT_URI);
 												}) === null) {
 													attrs.forEach(function forEachAttr(attr) {
 														const key = attr.getName();
-														if (key !== 'async') {
+														if (ignoreAttrs.indexOf(key) <= 0) {
 															const value = attr.getValue();
 															state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
 														};
@@ -422,47 +432,45 @@ module.exports = {
 												} else {
 													writeHTML(state);
 													writeAsyncWrites(state);
+													const integrities = [];
 													attrs.forEach(function forEachAttr(attr) {
-														const key = attr.getName(),
-															value = attr.getValue(),
-															compute = (attr.getBaseURI() === DDT_URI);
-														const integrities = [];
-														if (compute) {
-															let integrity = null;
-															if ((name === 'script') && (key === 'integrity')) {
-																integrity = 'src';
-															} else if ((name === 'link') && (key === 'integrity')) {
-																integrity = 'href';
+														const key = attr.getName();
+														if (ignoreAttrs.indexOf(key) <= 0) {
+															const value = attr.getValue(),
+																compute = (attr.getBaseURI() === DDT_URI);
+															if (compute) {
+																let integrity = null;
+																if ((name === 'script') && (key === 'integrity')) {
+																	integrity = 'src';
+																} else if ((name === 'link') && (key === 'integrity')) {
+																	integrity = 'href';
+																};
+																if (integrity) {
+																	integrities[integrities.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');');
+																} else {
+																	codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
+																};
+															} else {
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');');
 															};
-															if (integrity) {
-																integrities[integrities.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');');
-															} else if (key !== 'async') {
-																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
-															};
-														} else if (key !== 'async') {
-															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');');
 														};
-														types.append(codeParts, integrities);
 													}, this);
+													types.append(codeParts, integrities);
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 												};
+												const children = child.getChildren();
 												// <PRB> Browsers do not well support "<name />"
-												const hasChildren = !!child.getChildren().getCount() || (name === 'head') || (tools.indexOf(['link', 'meta', 'area', 'base', 'br', 'col', 'hr', 'img', 'input', 'param'], name) < 0);
+												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'track'], name) < 0);
+												let hasChildren = addCharset || !!children.getCount() || mandatoryContent;
 												if (hasChildren) {
 													state.html += '>';
-												};
-												parseNode(child, state);
-												if ((name === 'head') && !state.hasCharset) {
-													state.html += '<meta charset="UTF-8"/>';
-													state.hasCharset = true;
-												};
-												if (hasChildren) {
+													if (addCharset) {
+														state.html += '<meta charset="UTF-8"/>';
+													};
+													parseNode(child, state);
 													state.html += '</' + name + '>';
 												} else {
 													state.html += '/>';
-												};
-												if (name === 'head') {
-													state.isHead = false;
 												};
 											};
 										};
@@ -480,26 +488,40 @@ module.exports = {
 							};
 							
 							const state = {
-								hasDocType: (this.type !== 'ddt'),
-								hasCharset: false,
-								isHead: false,
 								html: '',
 								writes: '',
 								isIf: false,
 								promises: [],
 								cacheId: null,
 							};
-	
+
+
 							fnHeader();
+
+							if (this.type === 'ddt') {
+								// TODO: Replace by XPATH search when it will be available in doodad-js-xml.
+								const doctypeNodes = ddi.getChildren().find('doctype')
+									.filter(function(doctypeNode) {
+										return doctypeNode.getBaseURI() === DDT_URI;
+									});
+								if (doctypeNodes.length) {
+									const valueNodes = doctypeNodes.getAt(0).getChildren();
+									state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n'
+								} else {
+									state.html += '<!DOCTYPE html>\n'
+								};
+								writeHTML(state);
+							};
+
 							parseNode(ddi, state);
 							writeHTML(state);
 							writeAsyncWrites(state);
 							fnFooter();
+
 							
 							self.cache = cache;
 							self.cacheDuration = cacheDuration;
 
-							const Promise = types.getPromise();
 							return Promise.all(state.promises);
 						},
 
