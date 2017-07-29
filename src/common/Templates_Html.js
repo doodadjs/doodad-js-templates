@@ -613,6 +613,7 @@ module.exports = {
 					/*instanceProto*/
 					{
 						build: function() {
+							const Promise = types.getPromise();
 							return this.open()
 								.then(function(dummy) {
 									const ddtNode = this.doc.getRoot(),
@@ -626,40 +627,58 @@ module.exports = {
 
 									const type = namespaces.get(name);
 								
-									if (!types._implements(type, templatesHtml.PageTemplate)) {
-										throw new types.TypeError("Unknown page template '~0~'.", [name]);
-									};
+									return Promise.try(function() {
+											if (!type) {
+												return modules.load([
+														{
+															path: this.path.set({extension: (root.getOptions().fromSource ? 'js' : 'min.js')}),
+														},
+													], {startup: {secret: _shared.SECRET}})
+													.nodeify(function(err, dummy) {
+														if (err) {
+															return type;
+														};
+														return namespaces.get(name);
+													});
+											};
+											return type;
+										}, this)
+										.then(function(type) {
+											if (!types._implements(type, templatesHtml.PageTemplate)) {
+												throw new types.TypeError("Unknown page template '~0~'.", [name]);
+											};
 								
-									const code = this.toString('', true);
-						//console.log(code);
-									const locals = {root: root};
-									let fn = safeEval.createEval(types.keys(locals))
-									fn = fn.apply(null, types.values(locals));
-									fn = fn('(function() {' + this.getScriptVariables() + ';\nreturn (' + code + ')})()');
-						//console.log(fn);
+											const code = this.toString('', true);
+								//console.log(code);
+											const locals = {root: root};
+											let fn = safeEval.createEval(types.keys(locals))
+											fn = fn.apply(null, types.values(locals));
+											fn = fn('(function() {' + this.getScriptVariables() + ';\nreturn (' + code + ')})()');
+								//console.log(fn);
 
-									templ = templatesDDTX.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
-									{
-										$TYPE_NAME: templName,
+											templ = templatesDDTX.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
+											{
+												$TYPE_NAME: templName,
 
-										$options: {
-											cache: this.cache,
-											cacheDuration: this.cacheDuration,
-											encoding: this.options.encoding,
-										},
+												$options: {
+													cache: this.cache,
+													cacheDuration: this.cacheDuration,
+													encoding: this.options.encoding,
+												},
 									
-										renderTemplate: doodad.OVERRIDE(fn),
-									}));
+												renderTemplate: doodad.OVERRIDE(fn),
+											}));
 
-									let listener;
-									this.addEventListener('unload', listener = function(ev) {
-										this.removeEventListener('unload', listener);
-										_shared.invoke(templ, '$onUnload', null, _shared.SECRET);
-										templatesDDTX.UNREGISTER(templ);
-										types.DESTROY(templ);
-									});
+											let listener;
+											this.addEventListener('unload', listener = function(ev) {
+												this.removeEventListener('unload', listener);
+												_shared.invoke(templ, '$onUnload', null, _shared.SECRET);
+												templatesDDTX.UNREGISTER(templ);
+												types.DESTROY(templ);
+											});
 								
-									return templ;
+											return templ;
+										}, null, this);
 								}, null, this);
 						},
 					}
