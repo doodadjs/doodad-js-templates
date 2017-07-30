@@ -28,28 +28,27 @@
 		limitations under the License.
   -->
 
-  <!-- <PRB> "redefine" gives an infinite loop with libxml2 ! See "../ddt/common_ddt.xsd" and "../html5/common_html5.xsd"
+  <!-- <PRB> libxml2: "redefine" makes the XML document validation very slow. See "html5/common_html5.xsd" and "ddt/common_ddt.xsd" -->
+  <xs:complexType name="container_element_type" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:any minOccurs="0" maxOccurs="unbounded" namespace="##any" />
+    </xs:choice>
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+  <!-- <PRB> libxml2: "xs:redefine" makes the XML document very long to validate
   <xs:complexType name="container_element_type" abstract="true" mixed="true">
-    <xs:anyAttribute processContents="lax" />
+    <xs:anyAttribute processContents="skip" />
   </xs:complexType>
   -->
 
-  <!-- <PRB> "redefine" gives an infinite loop with libxml2 ! See "../ddt/common_ddt.xsd" and "../html5/common_html5.xsd" -->
-  <xs:complexType name="container_element_type" mixed="true">
-    <xs:choice minOccurs="0" maxOccurs="unbounded">
-      <xs:any namespace="##any" minOccurs="0" maxOccurs="unbounded" />
-    </xs:choice>
-    <xs:anyAttribute processContents="lax" />
-  </xs:complexType>
-
   <xs:complexType name="closed_element_type" final="#all" mixed="true">
-    <xs:anyAttribute processContents="lax" />
+    <xs:anyAttribute processContents="skip" />
   </xs:complexType>
 
   <xs:complexType name="string_element_type" final="#all" mixed="true">
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:anyAttribute processContents="lax" />
+        <xs:anyAttribute processContents="skip" />
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>

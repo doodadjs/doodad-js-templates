@@ -30,29 +30,12 @@
 		limitations under the License.
   -->
 
+  <xs:include schemaLocation="html5_base.xsd" />
+  
+  <!-- Kept there in case of...
   <xs:redefine schemaLocation="html5_base.xsd">
-    
-    <xs:complexType name="colgroup_type" mixed="true">
-      <xs:complexContent>
-        <xs:extension base="colgroup_type">
-          <xs:choice>
-            <xs:group ref="all_elements_group" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:choice>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
-
-    <xs:complexType name="tr_type" mixed="true">
-      <xs:complexContent>
-        <xs:extension base="tr_type">
-          <xs:choice>
-            <xs:element ref="td" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element ref="th" minOccurs="0" maxOccurs="unbounded"/>
-          </xs:choice>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
 
   </xs:redefine>
+  -->
 
 </xs:schema>

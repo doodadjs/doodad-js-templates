@@ -55,14 +55,6 @@
   </xs:element>
 
   <!--
-  <xs:complexType name="head_group_elements_type">
-    <xs:choice>
-      <xs:group ref="h:head_group" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:group ref="t:head_group" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:choice>
-    <xs:anyAttribute processContents="lax" />
-  </xs:complexType>
-
   <xs:group name="head_group">
     <xs:choice>
       <xs:element name="cache" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
@@ -74,6 +66,14 @@
       <xs:element name="widget" type="t:head_group_elements_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
+
+  <xs:complexType name="head_group_elements_type">
+    <xs:choice>
+      <xs:group ref="h:head_group" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="t:head_group" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
   -->
   
 </xs:schema>

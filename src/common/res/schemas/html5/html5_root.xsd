@@ -38,7 +38,7 @@
   <xs:element name="title" type="c:string_element_type" />
     
   <xs:complexType name="head_type" abstract="true" mixed="true">
-    <xs:anyAttribute processContents="lax"/>
+    <xs:anyAttribute processContents="skip"/>
   </xs:complexType>
 
   <xs:complexType name="html_type" mixed="true">
@@ -46,7 +46,7 @@
       <xs:element name="head" type="head_type" form="qualified" minOccurs="1" maxOccurs="1"/>
       <xs:element name="body" type="c:container_element_type" form="qualified" minOccurs="1" maxOccurs="1"/>
     </xs:sequence>
-    <xs:anyAttribute processContents="lax"/>
+    <xs:anyAttribute processContents="skip"/>
   </xs:complexType>
 
   <xs:group name="head_group">

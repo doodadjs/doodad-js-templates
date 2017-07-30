@@ -33,23 +33,20 @@
 
   <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="../common/common.xsd" />
 
-  <xs:complexType name="col_type" mixed="true">
-    <xs:anyAttribute processContents="lax"/>
-  </xs:complexType>
-  
-  <xs:element name="col" type="col_type" />
-  
-  <xs:complexType name="colgroup_type" abstract="true" mixed="true">
-    <xs:anyAttribute processContents="lax"/>
+  <xs:complexType name="colgroup_type" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="col" type="c:closed_element_type" form="qualified" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+    <xs:anyAttribute processContents="skip"/>
   </xs:complexType>
 
-  <xs:element name="colgroup" type="colgroup_type" />
-
-  <xs:element name="td" type="c:container_element_type" />
-  <xs:element name="th" type="c:container_element_type" />
-
-  <xs:complexType name="tr_type" abstract="true" mixed="true">
-    <xs:anyAttribute processContents="lax"/>
+  <xs:complexType name="tr_type" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <!-- <PRB> libxml2: Error "The definition is circular". See "ddt/html5_ddt.xsd." --> <xs:any namespace="##other" minOccurs="0" maxOccurs="unbounded" /> <!-- </PRB> -->
+      <xs:element name="td" type="c:container_element_type" form="qualified" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="th" type="c:container_element_type" form="qualified" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+    <xs:anyAttribute processContents="skip"/>
   </xs:complexType>
 
   <xs:element name="tr" type="tr_type" />
@@ -58,13 +55,13 @@
     <xs:complexType mixed="true">
       <xs:sequence>
         <xs:element name="caption" type="xs:string" form="qualified" minOccurs="0" maxOccurs="1" /> <!-- TODO: Allow HTML in caption -->
-        <xs:element name="colgroup" type="colgroup_type" form="qualified" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element name="colgroup" type="colgroup_type" form="qualified" minOccurs="0" maxOccurs="unbounded" />
         <xs:element name="thead" form="qualified" minOccurs="0" maxOccurs="1">
           <xs:complexType mixed="true">
             <xs:choice>
               <xs:element ref="tr" minOccurs="0" maxOccurs="unbounded"/>
             </xs:choice>
-            <xs:anyAttribute processContents="lax"/>
+            <xs:anyAttribute processContents="skip"/>
           </xs:complexType>
         </xs:element>
         <xs:element name="tbody" form="qualified" minOccurs="1" maxOccurs="1">
@@ -72,7 +69,7 @@
             <xs:choice>
               <xs:element ref="tr" minOccurs="0" maxOccurs="unbounded"/>
             </xs:choice>
-            <xs:anyAttribute processContents="lax"/>
+            <xs:anyAttribute processContents="skip"/>
           </xs:complexType>
         </xs:element>
         <xs:element name="tfoot" form="qualified" minOccurs="0" maxOccurs="1">
@@ -80,11 +77,11 @@
             <xs:choice>
               <xs:element ref="tr" minOccurs="0" maxOccurs="unbounded"/>
             </xs:choice>
-            <xs:anyAttribute processContents="lax"/>
+            <xs:anyAttribute processContents="skip"/>
           </xs:complexType>
         </xs:element>
       </xs:sequence>
-      <xs:anyAttribute processContents="lax"/>
+      <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
   </xs:element>
 

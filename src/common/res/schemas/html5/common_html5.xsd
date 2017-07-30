@@ -34,23 +34,21 @@
 
   <xs:import namespace="http://www.doodad-js.local/schemas/html5"	schemaLocation="../html5/html5_base.xsd"/>
 
-  <!-- <PRB> "redefine" gives an infinite loop with libxml2 ! See "../ddt/common_ddt.xsd" and "../html5/common_html5.xsd" -->
   <xs:include schemaLocation="../common/common.xsd" />
-
-  <!-- <PRB> "redefine" gives an infinite loop with libxml2 ! See "../ddt/common_ddt.xsd" and "../html5/common_html5.xsd"
+  <!-- <PRB> libxml2: "redefine" makes the XML document validation very slow.
   <xs:redefine schemaLocation="../common/common.xsd">
 
     <xs:complexType name="container_element_type" mixed="true">
       <xs:complexContent>
         <xs:extension base="c:container_element_type">
           <xs:choice minOccurs="0" maxOccurs="unbounded">
-            <xs:group ref="h:all_elements_group" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:group ref="h:html_elements_group" minOccurs="0" maxOccurs="unbounded"/>
           </xs:choice>
         </xs:extension>
       </xs:complexContent>
     </xs:complexType>
 
   </xs:redefine>
- -->
+  -->
   
 </xs:schema>

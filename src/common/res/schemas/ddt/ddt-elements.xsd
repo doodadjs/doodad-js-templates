@@ -34,7 +34,7 @@
 -->
 
   <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="common_ddt.xsd" />
-  <xs:import namespace="http://www.doodad-js.local/schemas/html5"	schemaLocation="html5_ddt.xsd"/>
+  <xs:import namespace="http://www.doodad-js.local/schemas/html5"	schemaLocation="../html5/html5_base.xsd"/>
 
   <xs:element name="script">
 		<xs:complexType>
@@ -133,7 +133,7 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:group name="elements_group">
+  <xs:group name="ddt_elements_group">
     <xs:choice>
       <xs:element ref="t:cache" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element ref="t:eval" minOccurs="0" maxOccurs="unbounded"/>

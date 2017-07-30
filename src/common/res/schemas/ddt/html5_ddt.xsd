@@ -31,46 +31,46 @@
 		limitations under the License.
 -->
 
-  <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="../common/common.xsd" />
-  <xs:import namespace="http://www.doodad-js.local/schemas/ddt"	schemaLocation="ddt-elements.xsd"/>
+  <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="common_ddt.xsd" />
+  <xs:import namespace="http://www.doodad-js.local/schemas/ddt"	schemaLocation="ddt-elements.xsd" />
 
   <xs:redefine schemaLocation="../html5/html5_base.xsd">
 
     <xs:complexType name="head_type" mixed="true">
       <xs:complexContent>
         <xs:extension base="head_type">
-          <xs:choice>
-            <!--<xs:group ref="t:head_group" minOccurs="0" maxOccurs="unbounded"/>-->
-            <!--<xs:group ref="t:elements_group" minOccurs="0" maxOccurs="unbounded"/>-->
-            <xs:group ref="head_group" minOccurs="1" maxOccurs="unbounded"/>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <!--<xs:group ref="t:head_group" minOccurs="0" maxOccurs="unbounded" />-->
+            <!--<xs:group ref="t:elements_group" minOccurs="0" maxOccurs="unbounded" />-->
+            <xs:group ref="head_group" minOccurs="1" maxOccurs="unbounded" />
           </xs:choice>
         </xs:extension>
       </xs:complexContent>
     </xs:complexType>
 
+    <!-- <PRB> libxml2: Error "The definition is circular"
     <xs:complexType name="colgroup_type" mixed="true">
       <xs:complexContent>
         <xs:extension base="colgroup_type">
-          <xs:choice>
-            <xs:group ref="t:elements_group" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element ref="col" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:group ref="t:ddt_elements_group" minOccurs="0" maxOccurs="unbounded" />
           </xs:choice>
         </xs:extension>
       </xs:complexContent>
     </xs:complexType>
+    -->
 
+    <!-- <PRB> libxml2: Error "The definition is circular"
     <xs:complexType name="tr_type" mixed="true">
       <xs:complexContent>
         <xs:extension base="tr_type">
-          <xs:choice>
-            <xs:group ref="t:elements_group" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element ref="td" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element ref="th" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:group ref="t:ddt_elements_group" minOccurs="0" maxOccurs="unbounded" />
           </xs:choice>
         </xs:extension>
       </xs:complexContent>
     </xs:complexType>
-
+    -->
   </xs:redefine>
 
 </xs:schema>

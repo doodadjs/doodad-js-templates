@@ -36,7 +36,7 @@
   <xs:include schemaLocation="html5_sections.xsd" />
   <xs:include schemaLocation="html5_tables.xsd" />
 
-  <xs:group name="all_elements_group">
+  <xs:group name="html_elements_group">
     <xs:choice>
       <xs:group ref="elements_group" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="forms_group" minOccurs="0" maxOccurs="unbounded"/>

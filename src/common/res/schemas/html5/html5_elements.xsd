@@ -89,11 +89,11 @@
       <xs:choice>
         <xs:element name="param" form="qualified" minOccurs="0" maxOccurs="unbounded">
           <xs:complexType mixed="true">
-            <xs:anyAttribute processContents="lax"/>
+            <xs:anyAttribute processContents="skip"/>
           </xs:complexType>
         </xs:element>
       </xs:choice>
-      <xs:anyAttribute processContents="lax"/>
+      <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
   </xs:element>
 
