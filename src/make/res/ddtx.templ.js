@@ -8,7 +8,9 @@ module.exports = {
 				"use strict";
 
 				const doodad = root.Doodad,
+					tools = doodad.Tools,
 					types = doodad.Types,
+					modules = doodad.Modules,
 					namespaces = doodad.Namespaces,
 					templates = doodad.Templates,
 					templatesHtml = templates.Html,
@@ -18,26 +20,42 @@ module.exports = {
 
 				// Create a function to isolate variables injected by VAR("ddtVariables")
 				__Internal__.createDDTX = function() {
-					const type = namespaces.get(/*! INJECT(TO_SOURCE(VAR("ddtType"))) */);
+					const Promise = types.getPromise();
+					const name = /*! INJECT(TO_SOURCE(VAR("ddtType"))) */;
 
-					if (!types._implements(type, templatesHtml.PageTemplate)) {
-						throw new types.TypeError("Unknown page template '~0~'.", [name]);
-					};
+					return Promise.try(function() {
+						const type = namespaces.get(name);
 
-					/*! INJECT(VAR("ddtVariables")) */
+						if (!type) {
+							const path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})());
+							return modules.load([{path: path.set({extension: 'min.js'})}], {startup: {secret: _shared.SECRET}})
+								.then(function(dummy) {
+									return namespaces.get(name);
+								});
+						};
 
-					return templatesDDTX.REGISTER(type.$extend(
-						{
-							$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
+						return type;
+					})
+					.then(function(type) {
+						if (!types._implements(type, templatesHtml.PageTemplate)) {
+							throw new types.TypeError("Unknown page template '~0~'.", [name]);
+						};
 
-							$options: {
-								cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
-								cacheDuration: /*! INJECT(TO_SOURCE(VAR("cacheDuration"))) */,
-								encoding: /*! INJECT(TO_SOURCE(VAR("encoding"))) */,
-							},
+						/*! INJECT(VAR("ddtVariables")) */
 
-							renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
-						}));
+						return templatesDDTX.REGISTER(type.$extend(
+							{
+								$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
+
+								$options: {
+									cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
+									cacheDuration: /*! INJECT(TO_SOURCE(VAR("cacheDuration"))) */,
+									encoding: /*! INJECT(TO_SOURCE(VAR("encoding"))) */,
+								},
+
+								renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
+							}));
+					});
 				};
 
 				try {
