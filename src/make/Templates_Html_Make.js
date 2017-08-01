@@ -30,10 +30,14 @@ module.exports = {
 		DD_MODULES['Doodad.Templates.Html.Make'] = {
 			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 			dependencies: [
-				'doodad-js-make',
-				'doodad-js-minifiers',
-				'doodad-js-templates',
-				'doodad-js-xml',
+				{
+					name: 'doodad-js-make',
+					type: 'Package',
+				},
+				{
+					name: 'doodad-js-templates',
+					type: 'Package',
+				},
 			],
 			
 			create: function create(root, /*optional*/_options, _shared) {
