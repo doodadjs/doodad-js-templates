@@ -270,42 +270,20 @@ module.exports = {
 												types.freezeObject(key); // Key is complete
 												cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
 
-												if (cached.created) {
-													const type = types.getType(this);
+												if (cached.created && root.getOptions().debug) {
+													let onUnloadListener = null;
 
-													let onvalidateListener = null,
-														oninvalidateListener = null,
-														onUnloadListener = null;
-
-													cached.addEventListener('validate', onvalidateListener = function() {
-														if (!types.DESTROYED(type)) {
-															type.$onUnload.attachOnce(null, onUnloadListener = function(ev) {
-																if (!types.DESTROYED(cached)) {
-																	cached.invalidate();
-
-																	cached.removeEventListener('validate', onvalidateListener);
-																	cached.removeEventListener('invalidate', oninvalidateListener);
-
-																	types.DESTROY(cached);
-																	cached = null;
-																};
-
-																onvalidateListener = null;
-																oninvalidateListener = null;
-																onUnloadListener = null;
-															});
-															if (root.getOptions().debug) {
-																files.watch(path, onUnloadListener, {once: true});
-															};
+													cached.addEventListener('validate', function() {
+														if (!onUnloadListener) {
+															files.watch(path, onUnloadListener = function() {
+																cached.invalidate();
+															}, {once: true});
 														};
 													});
 
-													cached.addEventListener('invalidate', oninvalidateListener = function() {
+													cached.addEventListener('invalidate', function() {
 														if (onUnloadListener) {
 															files.unwatch(path, onUnloadListener);
-															if (!types.DESTROYED(type)) {
-																type.$onUnload.detach(null, onUnloadListener);
-															};
 															onUnloadListener = null;
 														};
 													});
