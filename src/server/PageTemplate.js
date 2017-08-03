@@ -100,7 +100,7 @@ module.exports = {
 										};
 									}, null, this);
 									//.catch(function(err) {
-									//	debugger;
+									//	types.DEBUGGER();
 									//});
 							};
 						}),
