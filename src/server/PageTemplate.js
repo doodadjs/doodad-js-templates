@@ -265,7 +265,7 @@ module.exports = {
 											if (this.__cacheHandler) {
 												const key = this.__cacheHandler.createKey({
 													hash: type,
-													path: types.toString(path),
+													path: path.toApiString(),
 												});
 												types.freezeObject(key); // Key is complete
 												cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
