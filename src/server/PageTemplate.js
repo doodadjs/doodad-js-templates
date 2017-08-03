@@ -176,6 +176,8 @@ module.exports = {
 													cached.validate();
 													type.$onUnload.attachOnce(null, function(ev) {
 														cached.invalidate();
+
+														types.DESTROY(cached);
 													});
 												}, null, this)
 												.catch(function(err) {
@@ -270,21 +272,42 @@ module.exports = {
 
 												if (cached.created) {
 													const type = types.getType(this);
-													let onUnloadListener = null;
 
-													cached.addEventListener('validate', function onvalidate() {
-														type.$onUnload.attachOnce(null, onUnloadListener = function(ev) {
-															cached.invalidate();
-														});
-														if (root.getOptions().debug) {
-															files.watch(path, onUnloadListener, {once: true});
+													let onvalidateListener = null,
+														oninvalidateListener = null,
+														onUnloadListener = null;
+
+													cached.addEventListener('validate', onvalidateListener = function() {
+														if (!types.DESTROYED(type)) {
+															type.$onUnload.attachOnce(null, onUnloadListener = function(ev) {
+																if (!types.DESTROYED(cached)) {
+																	cached.invalidate();
+
+																	cached.removeEventListener('validate', onvalidateListener);
+																	cached.removeEventListener('invalidate', oninvalidateListener);
+
+																	types.DESTROY(cached);
+																	cached = null;
+																};
+
+																onvalidateListener = null;
+																oninvalidateListener = null;
+																onUnloadListener = null;
+															});
+															if (root.getOptions().debug) {
+																files.watch(path, onUnloadListener, {once: true});
+															};
 														};
 													});
 
-													cached.addEventListener('invalidate', function oninvalidate() {
-														files.unwatch(path, onUnloadListener);
-														type.$onUnload.detach(null, onUnloadListener);
-														onUnloadListener = null;
+													cached.addEventListener('invalidate', oninvalidateListener = function() {
+														if (onUnloadListener) {
+															files.unwatch(path, onUnloadListener);
+															if (!types.DESTROYED(type)) {
+																type.$onUnload.detach(null, onUnloadListener);
+															};
+															onUnloadListener = null;
+														};
 													});
 												};
 											};

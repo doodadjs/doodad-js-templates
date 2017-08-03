@@ -625,9 +625,8 @@ module.exports = {
 										return templ;
 									};
 
-									const type = namespaces.get(name);
-								
 									return Promise.try(function() {
+											const type = namespaces.get(name);
 											if (!type) {
 												return modules.load([
 														{
@@ -715,7 +714,7 @@ module.exports = {
 										modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, global: {ddtxId: key}}),
 									])
 									.then(function(results) {
-										const ddtx = __Internal__.ddtxCache[key] = results[0];
+										const ddtx = results[0];
 										return ddtx;
 									});
 							} else {
@@ -751,6 +750,10 @@ module.exports = {
 								delete __Internal__.ddtxCache[key];
 								throw err;
 							} else {
+								let listener;
+								ddtx.$onUnload.attachOnce(null, listener = function(ev) {
+									delete __Internal__.ddtxCache[key];
+								});
 								__Internal__.ddtxCache[key] = ddtx;
 								return ddtx;
 							};
