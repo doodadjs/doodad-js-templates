@@ -301,7 +301,7 @@ module.exports = {
 											if (name === 'body') {
 												parseNode(child, state);
 											};
-										} else if (ns === DDT_URI) {
+										} else if ((ns === DDT_URI) && (name !== 'html')) {
 											writeHTML(state);
 											writeAsyncWrites(state);
 											if (name === 'when-true') {
@@ -335,9 +335,7 @@ module.exports = {
 												writeAsyncWrites(newState);
 												codeParts[codeParts.length] = '};';
 											} else if (!state.isIf) {
-												if (name === 'html') {
-													parseNode(child, state);
-												} else if (name === 'if') {
+												if (name === 'if') {
 													if (!hasVariables) {
 														hasVariables = true;
 														codeParts[codeParts.length] = startAsync('page.asyncScript(');
@@ -394,7 +392,7 @@ module.exports = {
 													state.cacheId = null;
 												};
 											};
-										} else if (ns === HTML_URI) {
+										} else if ((ns === HTML_URI) || ((ns === DDT_URI) && (name === 'html'))) {
 											if (!state.isIf) {
 												let addCharset = false;
 												if (name === 'head') {
@@ -411,11 +409,10 @@ module.exports = {
 													};
 												};
 												state.html += '<' + name;
-												const ignoreAttrs = [];
+												const ignoreAttrs = ['async'];
 												if (name === 'script') {
 													if (child.hasAttr('async')) {
 														state.html += ' async';
-														ignoreAttrs.push('async');
 													};
 												};
 												const attrs = child.getAttrs();
@@ -424,7 +421,7 @@ module.exports = {
 												}) === null) {
 													attrs.forEach(function forEachAttr(attr) {
 														const key = attr.getName();
-														if (ignoreAttrs.indexOf(key) <= 0) {
+														if (ignoreAttrs.indexOf(key) < 0) {
 															const value = attr.getValue();
 															state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
 														};
@@ -435,7 +432,7 @@ module.exports = {
 													const integrities = [];
 													attrs.forEach(function forEachAttr(attr) {
 														const key = attr.getName();
-														if (ignoreAttrs.indexOf(key) <= 0) {
+														if (ignoreAttrs.indexOf(key) < 0) {
 															const value = attr.getValue(),
 																compute = (attr.getBaseURI() === DDT_URI);
 															if (compute) {
@@ -506,9 +503,9 @@ module.exports = {
 									});
 								if (doctypeNodes.length) {
 									const valueNodes = doctypeNodes.getAt(0).getChildren();
-									state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n'
+									state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n';
 								} else {
-									state.html += '<!DOCTYPE html>\n'
+									state.html += '<!DOCTYPE html>\n';
 								};
 								writeHTML(state);
 							};
