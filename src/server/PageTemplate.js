@@ -312,34 +312,38 @@ module.exports = {
 											} else if (cached && cached.isInvalid() && (this.request.verb !== 'HEAD')) {
 												return getHash.call(this)
 													.then(function(hash) {
-														return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
-															.then(function(cacheStream) {
-																return cacheStream && cacheStream.writeAsync(hash)
-																	.then(function() {
-																		if (cacheStream) {
-																			// TODO: Write a helper for that, like ".end"
-																			if (cacheStream._implements(ioMixIns.BufferedStreamBase)) {
-																				return cacheStream.flushAsync({purge: true})
-																					.then(function() {
-																						if (cacheStream.canWrite()) {
-																							cacheStream.write(io.EOF);
-																							return cacheStream.flushAsync({purge: true});
-																						};
-																					});
-																			} else {
-																				return cacheStream.writeAsync(io.EOF);
+														if (cached.isInvalid()) {
+															return this.__cacheHandler.createFile(this.request, cached, {encoding: 'utf-8'})
+																.then(function(cacheStream) {
+																	return cacheStream && cacheStream.writeAsync(hash)
+																		.then(function() {
+																			if (cacheStream) {
+																				// TODO: Write a helper for that, like ".end"
+																				if (cacheStream._implements(ioMixIns.BufferedStreamBase)) {
+																					return cacheStream.flushAsync({purge: true})
+																						.then(function() {
+																							if (cacheStream.canWrite()) {
+																								cacheStream.write(io.EOF);
+																								return cacheStream.flushAsync({purge: true});
+																							};
+																						});
+																				} else {
+																					return cacheStream.writeAsync(io.EOF);
+																				};
 																			};
-																		};
-																	}, null, this)
-																	.then(function() {
-																		cached.validate();
-																		return hash;
-																	}, null, this)
-																	.catch(function(err) {
-																		cached.abort();
-																		throw err;
-																	}, this);
-															}, null, this)
+																		}, null, this)
+																		.then(function() {
+																			cached.validate();
+																			return hash;
+																		}, null, this)
+																		.catch(function(err) {
+																			cached.abort();
+																			throw err;
+																		}, this);
+																}, null, this);
+														} else {
+															return start.call(this);
+														};
 													}, null, this);
 
 											} else {
