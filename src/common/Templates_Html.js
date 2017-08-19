@@ -119,6 +119,7 @@ module.exports = {
 						asyncForEach: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(items, fn)
 						asyncInclude: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
 						asyncScript: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
+						asyncLoad: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(options, mods, defaultIntegrity, doodadPackageUrl, bootTemplateUrl)
 
 						compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
 						compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
@@ -211,6 +212,11 @@ module.exports = {
 							const DDI_URI = "http://www.doodad-js.local/schemas/ddi"
 							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
+
+							const DEFAULT_DOODAD_PKG_URL = '?res=doodad-js/doodad-js.min.js';
+							const DEFAULT_BOOT_TEMPL_URL = '?res=doodad-js-templates/Boot.min.js';
+
+							const RESERVED_OBJ_PROPS = ['__proto__', 'toString', 'toValue', 'toJSON', 'toSource'];
 							
 							const doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
 							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
@@ -223,11 +229,17 @@ module.exports = {
 
 							let cache = false;
 							let cacheDuration = null;
+							let defaultIntegrity = null;
+							let doodadPackageUrl = DEFAULT_DOODAD_PKG_URL;
+							let bootTemplateUrl = DEFAULT_BOOT_TEMPL_URL;
 							if (self.type === 'ddt') {
 								cache = types.toBoolean(ddi.getAttr('cache'));
 								if (cache) {
 									cacheDuration = types.toInteger(ddi.getAttr('cacheDuration'));
 								};
+								defaultIntegrity = ddi.getAttr('defaultIntegrity');
+								doodadPackageUrl = ddi.getAttr('doodadPackageUrl') || DEFAULT_DOODAD_PKG_URL;
+								bootTemplateUrl = ddi.getAttr('bootTemplateUrl') || DEFAULT_BOOT_TEMPL_URL;
 							};
 
 							const writeHTML = function writeHTML(state) {
@@ -304,7 +316,7 @@ module.exports = {
 										} else if ((ns === DDT_URI) && (name !== 'html')) {
 											writeHTML(state);
 											writeAsyncWrites(state);
-											if (name === 'when-true') {
+											if (!state.isModules && (name === 'when-true')) {
 												if (!state.isIf) {
 													if (!hasVariables) {
 														hasVariables = true;
@@ -319,7 +331,7 @@ module.exports = {
 												writeHTML(newState);
 												writeAsyncWrites(newState);
 												codeParts[codeParts.length] = '};';
-											} else if (name === 'when-false') {
+											} else if (!state.isModules && (name === 'when-false')) {
 												if (!state.isIf) {
 													if (!hasVariables) {
 														hasVariables = true;
@@ -335,7 +347,7 @@ module.exports = {
 												writeAsyncWrites(newState);
 												codeParts[codeParts.length] = '};';
 											} else if (!state.isIf) {
-												if (name === 'if') {
+												if (!state.isModules && (name === 'if')) {
 													if (!hasVariables) {
 														hasVariables = true;
 														codeParts[codeParts.length] = startAsync('page.asyncScript(');
@@ -346,13 +358,13 @@ module.exports = {
 													parseNode(child, newState);
 													writeHTML(newState);
 													writeAsyncWrites(newState);
-												} else if (name === 'script') {
+												} else if (!state.isModules && (name === 'script')) {
 													const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
 													if (vars.length) {
 														codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 													};
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
-												} else if (name === 'for-each') {
+												} else if (!state.isModules && (name === 'for-each')) {
 													codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
 													startFn(child.getAttr('item') || 'item');
 													parseNode(child, state);
@@ -360,9 +372,9 @@ module.exports = {
 													writeAsyncWrites(state);
 													endFn();
 													codeParts[codeParts.length] = endAsync(');');
-												} else if (name === 'eval') {
+												} else if (!state.isModules && (name === 'eval')) {
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
-												} else if (name === 'variable') {
+												} else if (!state.isModules && (name === 'variable')) {
 													// TODO: Fix identation
 													const name = (child.getAttr('name') || 'x');
 													if (!hasVariables) {
@@ -372,14 +384,14 @@ module.exports = {
 													};
 													codeParts[codeParts.length] = ('let ' + name + ' = null;');
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
-												} else if (name === 'include') {
+												} else if (!state.isModules && (name === 'include')) {
 													let path = child.getAttr('src');
 													path = self.path.set({file: null}).combine(path);
 													const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
 													codeParts[codeParts.length] = ddi;
 													state.promises[state.promises.length] = ddi.open();
 													ddi.parents.set(self, self.path.toString());
-												} else if ((name === 'cache') && !state.cacheId) {
+												} else if (!state.isModules && (name === 'cache') && !state.cacheId) {
 													state.cacheId = child.getAttr('id');
 													const duration = child.getAttr("duration");
 													codeParts[codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
@@ -390,11 +402,32 @@ module.exports = {
 													endFn();
 													codeParts[codeParts.length] = endAsync(');');
 													state.cacheId = null;
+												} else if (!state.isModules && (name === 'modules')) {
+													const newState = types.extend({}, state, {isModules: true, modules: []});
+													parseNode(child, newState);
+													state.modules = newState.modules;
+												} else if (state.isModules && !state.isOptions && (name === 'options')) {
+													const newState = types.extend({}, state, {isOptions: true, modules: null});
+													parseNode(child, newState);
+												} else if (state.isModules && state.isOptions && (name === 'option')) {
+													const optName = child.getAttr('name');
+													if (tools.indexOf(RESERVED_OBJ_PROPS, optName) < 0) {
+														const optVal = child.getAttr('value');
+														state.options[optName] = optVal;
+													};
+												} else if (state.isModules && !state.isOptions && state.modules && (name === 'load')) {
+													state.modules.push({
+														module: child.getAttr("module") || null,
+														path: child.getAttr("path") || null,
+														optional: types.toBoolean(child.getAttr("optional") || false),
+														integrity: child.getAttr("integrity") || defaultIntegrity || null,
+													});
 												};
 											};
 										} else if ((ns === HTML_URI) || ((ns === DDT_URI) && (name === 'html'))) {
-											if (!state.isIf) {
-												let addCharset = false;
+											if (!state.isIf && !state.isModules) {
+												let addCharset = false,
+													addModules = false;
 												if (name === 'head') {
 													// TODO: Replace by an XPATH search when they will be available in doodad-js-xml.
 													const metaNodes = child.getChildren().find('meta');
@@ -407,6 +440,8 @@ module.exports = {
 															break;
 														};
 													};
+												} else if (name === 'body') {
+													addModules = !!state.modules;
 												};
 												state.html += '<' + name;
 												const ignoreAttrs = ['async'];
@@ -416,7 +451,13 @@ module.exports = {
 													};
 												};
 												const attrs = child.getAttrs();
-												if (tools.findItem(attrs, function(attr) {
+												let integrity = null;
+												if (name === 'script') {
+													integrity = 'src';
+												} else if (name === 'link') {
+													integrity = 'href';
+												};
+												if ((!integrity || !defaultIntegrity) && tools.findItem(attrs, function(attr) {
 													return (attr.getBaseURI() === DDT_URI);
 												}) === null) {
 													attrs.forEach(function forEachAttr(attr) {
@@ -429,21 +470,15 @@ module.exports = {
 												} else {
 													writeHTML(state);
 													writeAsyncWrites(state);
-													const integrities = [];
+													let integrityValue = defaultIntegrity;
 													attrs.forEach(function forEachAttr(attr) {
 														const key = attr.getName();
 														if (ignoreAttrs.indexOf(key) < 0) {
 															const value = attr.getValue(),
 																compute = (attr.getBaseURI() === DDT_URI);
 															if (compute) {
-																let integrity = null;
-																if ((name === 'script') && (key === 'integrity')) {
-																	integrity = 'src';
-																} else if ((name === 'link') && (key === 'integrity')) {
-																	integrity = 'href';
-																};
-																if (integrity) {
-																	integrities[integrities.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource(key) + ',' + types.toSource(value) + ',' + types.toSource(integrity) + ');');
+																if (key === integrity) {
+																	integrityValue = value;
 																} else {
 																	codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
 																};
@@ -452,7 +487,9 @@ module.exports = {
 															};
 														};
 													}, this);
-													types.append(codeParts, integrities);
+													if (integrity && integrityValue) {
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource('integrity') + ',' + types.toSource(integrityValue) + ',' + types.toSource(integrity) + ');');
+													};
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 												};
 												const children = child.getChildren();
@@ -464,6 +501,12 @@ module.exports = {
 													if (addCharset) {
 														state.html += '<meta charset="UTF-8"/>';
 													};
+													if (addModules) {
+														writeHTML(state);
+														writeAsyncWrites(state);
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + types.toSource(state.options, 15) + ',' + types.toSource(state.modules, 5) + ',' + types.toSource(defaultIntegrity) + ',' + types.toSource(doodadPackageUrl) + ',' + types.toSource(bootTemplateUrl) + ');');
+														state.modules = null;
+													};
 													parseNode(child, state);
 													state.html += '</' + name + '>';
 												} else {
@@ -471,9 +514,9 @@ module.exports = {
 												};
 											};
 										};
-									} else if ((!state.isIf) && (child instanceof xml.Text)) {
+									} else if ((!state.isIf && !state.isOptions) && (child instanceof xml.Text)) {
 										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
-									} else if ((!state.isIf) && (child instanceof xml.CDATASection)) {
+									} else if ((!state.isIf && !state.isOptions) && (child instanceof xml.CDATASection)) {
 										state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
 									};
 								}, this);
@@ -488,8 +531,12 @@ module.exports = {
 								html: '',
 								writes: '',
 								isIf: false,
+								isModules: false,
+								isOptions: false,
 								promises: [],
 								cacheId: null,
+								modules: null,
+								options: types.nullObject(),
 							};
 
 

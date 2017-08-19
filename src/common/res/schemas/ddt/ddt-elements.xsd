@@ -36,6 +36,33 @@
   <xs:import namespace="http://www.doodad-js.local/schemas/common" schemaLocation="common_ddt.xsd" />
   <xs:import namespace="http://www.doodad-js.local/schemas/html5"	schemaLocation="../html5/html5_base.xsd"/>
 
+  <xs:element name="modules">
+    <xs:complexType>
+      <xs:sequence minOccurs="1" maxOccurs="1">
+        <xs:element name="options" form="qualified" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+              <xs:element name="option" form="qualified" minOccurs="1" maxOccurs="unbounded" >
+                <xs:complexType>
+                  <xs:attribute name="name" type="xs:string" />
+                  <xs:attribute name="value" type="xs:string" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="load" form="qualified" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="module" type="xs:string" use="optional" />
+            <xs:attribute name="path" type="xs:string" use="optional" />
+            <xs:attribute name="optional" type="xs:boolean" use="optional" default="false" />
+            <xs:attribute name="integrity" type="xs:string" use="optional" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="script">
 		<xs:complexType>
 			<xs:simpleContent>

@@ -45,12 +45,16 @@
         <xs:element name="doctype" type="xs:string" form="qualified" default="html" minOccurs="0" maxOccurs="1" />
         <xs:element ref="t:variable" minOccurs="0" maxOccurs="1" />
         <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
+        <xs:element ref="t:modules" minOccurs="0" maxOccurs="1" />
         <xs:element name="html" type="h:html_type" form="qualified" minOccurs="1" maxOccurs="1"/>
         <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
       </xs:sequence>
       <xs:attribute name="type" type="xs:string" use="required"/>
       <xs:attribute name="cache" type="xs:boolean" default="true"/>
       <xs:attribute name="cacheDuration" type="xs:string"/>
+      <xs:attribute name="defaultIntegrity" type="xs:string"/>
+      <xs:attribute name="doodadPackageUrl" type="xs:string" />
+      <xs:attribute name="bootTemplateUrl" type="xs:string" />
     </xs:complexType>
   </xs:element>
 
