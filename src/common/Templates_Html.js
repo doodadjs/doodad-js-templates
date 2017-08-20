@@ -539,9 +539,9 @@ module.exports = {
 												};
 											};
 										};
-									} else if ((!state.isIf && !state.isOptions) && (child instanceof xml.Text)) {
+									} else if ((!state.isIf && !state.isModules) && (child instanceof xml.Text)) {
 										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
-									} else if ((!state.isIf && !state.isOptions) && (child instanceof xml.CDATASection)) {
+									} else if ((!state.isIf && !state.isModules) && (child instanceof xml.CDATASection)) {
 										state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
 									};
 								}, this);
