@@ -477,11 +477,7 @@ module.exports = {
 															const value = attr.getValue(),
 																compute = (attr.getBaseURI() === DDT_URI);
 															if (compute) {
-																if (key === integrity) {
-																	integrityValue = value;
-																} else {
-																	codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
-																};
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
 															} else {
 																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');');
 															};
