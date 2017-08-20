@@ -410,10 +410,39 @@ module.exports = {
 													const newState = types.extend({}, state, {isOptions: true, modules: null});
 													parseNode(child, newState);
 												} else if (state.isModules && state.isOptions && (name === 'option')) {
-													const optName = child.getAttr('name');
-													if (tools.indexOf(RESERVED_OBJ_PROPS, optName) < 0) {
-														const optVal = child.getAttr('value');
-														state.options[optName] = optVal;
+													const optModule = child.getAttr('module'); // required
+													if (optModule && (tools.indexOf(RESERVED_OBJ_PROPS, optModule) < 0)) {
+														const optKey = child.getAttr('key'); // optional
+														const optVal = child.getAttr('value') || ''; // required
+														if (optKey) {
+															const MAX_DEPTH = 15;
+															const opt = state.options[optModule] || {};
+															const keys = optKey.split('.'),
+																keysLen = keys.length;
+															let lastOpt = opt;
+															for (let i = 0; (i < MAX_DEPTH) && (i < keysLen - 1); i++) {
+																const key = keys[i];
+																if (!key || (tools.indexOf(RESERVED_OBJ_PROPS, key) >= 0)) {
+																	// Empty string or reserved key.
+																	lastOpt = null;
+																	break;
+																};
+																const newOpt = lastOpt[key] || {};
+																lastOpt[key] = newOpt;
+																lastOpt = newOpt;
+															};
+															const lastKey = keys[keysLen - 1];
+															if (lastKey && lastOpt && (tools.indexOf(RESERVED_OBJ_PROPS, lastKey) < 0)) {
+																lastOpt[lastKey] = optVal;
+																state.options[optModule] = opt;
+															} else {
+																throw new types.ParseError("Invalid value for the 'key' attribute in an 'option' element.");
+															};
+														} else {
+															state.options[optModule] = optVal;
+														};
+													} else {
+														throw new types.ParseError("Invalid value for the 'module' attribute in an 'option' element.");
 													};
 												} else if (state.isModules && !state.isOptions && state.modules && (name === 'load')) {
 													state.modules.push({

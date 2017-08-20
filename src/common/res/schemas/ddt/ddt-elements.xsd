@@ -44,8 +44,9 @@
             <xs:sequence minOccurs="0" maxOccurs="unbounded">
               <xs:element name="option" form="qualified" minOccurs="1" maxOccurs="unbounded" >
                 <xs:complexType>
-                  <xs:attribute name="name" type="xs:string" />
-                  <xs:attribute name="value" type="xs:string" />
+                  <xs:attribute name="module" type="xs:string" use="required" />
+                  <xs:attribute name="key" type="xs:string" use="optional" />
+                  <xs:attribute name="value" type="xs:string" use="required" />
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
