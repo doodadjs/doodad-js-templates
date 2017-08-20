@@ -98,7 +98,7 @@ module.exports = {
 							if (flush || (this.__buffer.length >= (1024 * 1024 * 1))) {  // TODO: Add an option in DDT for max buffer length
 								const buffer = this.__buffer;
 								this.__buffer = '';
-								return this.stream.writeAsync(buffer)
+								return this.writeAsync(buffer)
 									.then(function() {
 										if (this.__cacheStream) {
 											return this.__cacheStream.writeAsync(buffer);
@@ -144,7 +144,7 @@ module.exports = {
 										.then(function(cacheStream) {
 											if (cacheStream) {
 												const promise = cacheStream.onEOF.promise();
-												cacheStream.pipe(this.stream, {end: false});
+												cacheStream.pipe(this, {end: false});
 												cacheStream.flush();
 												return promise;
 											} else {
