@@ -46,9 +46,9 @@
 				const toLoad = [
 					//! MAP(VAR("modules"), "mod")
 						{
-							module: /*! INJECT(TO_SOURCE(VAR("mod.module"))) */,
-							path: /*! INJECT(TO_SOURCE(VAR("mod.path"))) */,
-							optional: /*! INJECT(TO_SOURCE(VAR("mod.optional"))) */,
+							module: /*! INJECT(TO_SOURCE(VAR("mod.module") || null)) */,
+							path: /*! INJECT(TO_SOURCE(VAR("mod.path") || null)) */,
+							optional: /*! INJECT(TO_SOURCE(VAR("mod.optional") || false)) */,
 						}
 					//! END_MAP()
 				];
