@@ -214,7 +214,25 @@ module.exports = {
 							const Promise = types.getPromise();
 
 							if (options || mods) {
-								const doodadUrl = this.request.url.combine(doodadPackageUrl);
+								let doodadUrl = this.request.url.combine(doodadPackageUrl);
+								let bootUrl = this.request.url.combine(bootTemplateUrl);
+
+								if (!root.getOptions().debug) {
+									// TODO: Move "isMinJs" to "Tools.File"
+									const MIN_JS_EXT = '.min.js',
+										MIN_JS_EXT_LEN = MIN_JS_EXT.length;
+									const isMinJs = function _isMinJs(fileName) {
+										return fileName.lastIndexOf(MIN_JS_EXT) === fileName.length - MIN_JS_EXT_LEN;
+									};
+									if (!isMinJs(doodadUrl.file)) {
+										// TODO: Create "toMinJs" function in "Tools.Files"
+										doodadUrl = doodadUrl.set({extension: 'min.js'});
+									};
+									if (!isMinJs(bootUrl.file)) {
+										// TODO: Create "toMinJs" function in "Tools.Files"
+										bootUrl = bootUrl.set({extension: 'min.js'});
+									};
+								};
 
 								return this.request.resolve(doodadUrl, 'Doodad.Server.Http.StaticPage')
 									.then(function(doodadHandler) {
@@ -223,8 +241,6 @@ module.exports = {
 										};
 
 										//const doodadState = this.request.getHandlerState(doodadHandler);
-
-										const bootUrl = this.request.url.combine(bootTemplateUrl);
 
 										return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptPage')
 											.then(function(bootHandler) {
