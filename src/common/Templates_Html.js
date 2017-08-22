@@ -109,22 +109,19 @@ module.exports = {
 							return this.renderTemplate()
 								.then(function() {
 									// Flush buffer
-									return this.asyncWrite(null, true);
+									return this.writeAsync(null, {flush: true});
 								}, null, this);
 						}),
 
 						// <PRB> Because of async/await, the following must be PUBLIC...
 
-						asyncWrite: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(code, /*optional*/flush)
+						compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
+						compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
 						asyncForEach: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(items, fn)
 						asyncInclude: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
 						asyncScript: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
 						asyncLoad: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(options, mods, defaultIntegrity, doodadPackageUrl, bootTemplateUrl)
-
-						compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
-						compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
 						asyncWriteAttrs: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function()
-
 						asyncCache: doodad.PUBLIC(doodad.ASYNC(doodad.NOT_IMPLEMENTED())), // function(id, duration, fn)
 					})));
 
@@ -293,7 +290,7 @@ module.exports = {
 
 							const writeAsyncWrites = function writeAsyncWrites(state) {
 								if (state.writes) {
-									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWrite(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.writeAsync(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
 									state.writes = '';
 								};
 							};
@@ -373,7 +370,7 @@ module.exports = {
 													endFn();
 													codeParts[codeParts.length] = endAsync(');');
 												} else if (!state.isModules && (name === 'eval')) {
-													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.asyncWrite(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
 												} else if (!state.isModules && (name === 'variable')) {
 													// TODO: Fix identation
 													const name = (child.getAttr('name') || 'x');

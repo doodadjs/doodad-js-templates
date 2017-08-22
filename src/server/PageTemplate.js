@@ -66,7 +66,7 @@ module.exports = {
 						
 						request: doodad.PUBLIC(doodad.READ_ONLY(null)),
 						
-						__buffer: doodad.PROTECTED(null),
+						__writeBuffer: doodad.PROTECTED(null),
 						__cacheStream: doodad.PROTECTED(null),
 						__cacheHandler: doodad.PROTECTED(null),
 						__compiledAttrs: doodad.PROTECTED(null),
@@ -87,18 +87,21 @@ module.exports = {
 						}),
 						
 						render: doodad.OVERRIDE(function render() {
-							this.__buffer = '';
+							this.__writeBuffer = '';
 							this.__cacheStream = null;
 							
 							return this._super();
 						}),
 
-						asyncWrite: doodad.OVERRIDE(function asyncWrite(code, /*optional*/flush) {
-							this.__buffer += (code || '');
-							if (flush || (this.__buffer.length >= (1024 * 1024 * 1))) {  // TODO: Add an option in DDT for max buffer length
-								const buffer = this.__buffer;
-								this.__buffer = '';
-								return this.writeAsync(buffer)
+						writeAsync: doodad.OVERRIDE(function writeAsync(code, /*optional*/options) {
+							const flush = types.get(options, 'flush', false);
+							if (code) {
+								this.__writeBuffer += code;
+							};
+							const buffer = this.__writeBuffer;
+							if (buffer && (flush || (buffer.length >= (1024 * 1024 * 1)))) {  // TODO: Add an option in DDT for max buffer length
+								this.__writeBuffer = '';
+								return this._super(buffer, options)
 									.then(function() {
 										if (this.__cacheStream) {
 											return this.__cacheStream.writeAsync(buffer);
@@ -108,6 +111,7 @@ module.exports = {
 									//	types.DEBUGGER();
 									//});
 							};
+							this.overrideSuper();
 						}),
 						
 						asyncForEach: doodad.OVERRIDE(function asyncForEach(items, fn) {
@@ -158,7 +162,7 @@ module.exports = {
 											// <PRB> Because of async/await, must convert the Promise back to a DDPromise using DDPromise.resolve().
 											return Promise.resolve(fn.call(this))
 												.then(function() {
-													return this.asyncWrite(null, true);
+													return this.writeAsync(null, {flush: true});
 												}, null, this)
 												.then(function() {
 													this.__cacheStream = null;
@@ -194,11 +198,11 @@ module.exports = {
 									this.__cacheStream = null;
 									return Promise.resolve(fn.call(this))
 										.then(function() {
-											return this.asyncWrite(null, true);
+											return this.writeAsync(null, {flush: true});
 										}, null, this);
 								};
 							};
-							return this.asyncWrite(null, true)
+							return this.writeAsync(null, {flush: true})
 								.then(start, null, this);
 						}),
 
@@ -256,12 +260,12 @@ module.exports = {
 
 														return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadUrl) : Promise.resolve(null))
 															.then(function(integrity) {
-																return this.asyncWrite('<script async src="' + doodadUrl.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
+																return this.writeAsync('<script async src="' + doodadUrl.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
 															}, null, this)
 															.then(function(dummy) {
 																return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, bootUrlVars) : Promise.resolve(null))
 																	.then(function(integrity) {
-																		return this.asyncWrite('<script async src="' + bootUrlVars.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
+																		return this.writeAsync('<script async src="' + bootUrlVars.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
 																	}, null, this);
 															}, null, this);
 													}, null, this);
@@ -470,7 +474,7 @@ module.exports = {
 									.then(function(value) {
 										const name = entry[0];
 										compiledAttrs[name] = value;
-										return this.asyncWrite(' ' + tools.escapeHtml(types.toString(name)) + '="' + tools.escapeHtml(types.toString(value)) + '"');
+										return this.writeAsync(' ' + tools.escapeHtml(types.toString(name)) + '="' + tools.escapeHtml(types.toString(value)) + '"');
 									}, null, this);
 							}, {thisObj: this});
 							//.catch(err => {console.error(err); throw err});
