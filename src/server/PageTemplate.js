@@ -254,7 +254,7 @@ module.exports = {
 
 												//const bootState = this.request.getHandlerState(bootHandler);
 
-												return types.getType(bootHandler).$setJsVars(this.request, {options: options || null, modules: (mods && mods.length > 0 ? mods : null), startups: null})
+												return bootHandler.setJsVars(this.request, {options: options || null, modules: (mods && mods.length > 0 ? mods : null), startups: null})
 													.then(function(varsId) {
 														const bootUrlVars = bootUrl.setArgs({vars: varsId});
 
