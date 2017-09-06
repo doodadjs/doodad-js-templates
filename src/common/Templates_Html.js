@@ -54,12 +54,12 @@ module.exports = {
 				
 				const __Internal__ = {
 					entities: null,
-					templatesCached: types.nullObject(),
-					ddtxCache: types.nullObject(),
+					templatesCached: tools.nullObject(),
+					ddtxCache: tools.nullObject(),
 				};
 				
 				
-				const __options__ = types.extend({
+				const __options__ = tools.extend({
 					resourcesPath: './res/', // Combined with package's root folder
 				}, _options);
 
@@ -241,7 +241,7 @@ module.exports = {
 
 							const writeHTML = function writeHTML(state) {
 								if (state.html) {
-									state.writes += types.toSource(state.html) + ' + ';
+									state.writes += tools.toSource(state.html) + ' + ';
 									state.html = '';
 								};
 							};
@@ -323,7 +323,7 @@ module.exports = {
 													codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
 												};
 												codeParts[codeParts.length] = 'if (__expr__) {';
-												const newState = types.extend({}, state, {isIf: false});
+												const newState = tools.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
@@ -338,7 +338,7 @@ module.exports = {
 													codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
 												};
 												codeParts[codeParts.length] = 'if (!__expr__) {';
-												const newState = types.extend({}, state, {isIf: false});
+												const newState = tools.extend({}, state, {isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
@@ -351,7 +351,7 @@ module.exports = {
 														startFn();
 													};
 													codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
-													const newState = types.extend({}, state, {isIf: true});
+													const newState = tools.extend({}, state, {isIf: true});
 													parseNode(child, newState);
 													writeHTML(newState);
 													writeAsyncWrites(newState);
@@ -391,7 +391,7 @@ module.exports = {
 												} else if (!state.isModules && (name === 'cache') && !state.cacheId) {
 													state.cacheId = child.getAttr('id');
 													const duration = child.getAttr("duration");
-													codeParts[codeParts.length] = startAsync('page.asyncCache(' + types.toSource(state.cacheId) + ', ' + types.toSource(duration) + ', ');
+													codeParts[codeParts.length] = startAsync('page.asyncCache(' + tools.toSource(state.cacheId) + ', ' + tools.toSource(duration) + ', ');
 													startFn();
 													parseNode(child, state);
 													writeHTML(state);
@@ -400,11 +400,11 @@ module.exports = {
 													codeParts[codeParts.length] = endAsync(');');
 													state.cacheId = null;
 												} else if (!state.isModules && (name === 'modules')) {
-													const newState = types.extend({}, state, {isModules: true, modules: []});
+													const newState = tools.extend({}, state, {isModules: true, modules: []});
 													parseNode(child, newState);
 													state.modules = newState.modules;
 												} else if (state.isModules && !state.isOptions && (name === 'options')) {
-													const newState = types.extend({}, state, {isOptions: true, modules: null});
+													const newState = tools.extend({}, state, {isOptions: true, modules: null});
 													parseNode(child, newState);
 												} else if (state.isModules && state.isOptions && (name === 'option')) {
 													const optModule = child.getAttr('module'); // required
@@ -503,14 +503,14 @@ module.exports = {
 															const value = attr.getValue(),
 																compute = (attr.getBaseURI() === DDT_URI);
 															if (compute) {
-																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',(' + value + '));');
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ',(' + value + '));');
 															} else {
-																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + types.toSource(key) + ',' + types.toSource(value) + ');');
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ',' + tools.toSource(value) + ');');
 															};
 														};
 													}, this);
 													if (integrity && integrityValue) {
-														codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + types.toSource('integrity') + ',' + types.toSource(integrityValue) + ',' + types.toSource(integrity) + ');');
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + tools.toSource('integrity') + ',' + tools.toSource(integrityValue) + ',' + tools.toSource(integrity) + ');');
 													};
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 												};
@@ -526,7 +526,7 @@ module.exports = {
 													if (addModules) {
 														writeHTML(state);
 														writeAsyncWrites(state);
-														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + types.toSource(state.options, 15) + ',' + types.toSource(state.modules, 5) + ',' + types.toSource(defaultIntegrity) + ',' + types.toSource(doodadPackageUrl) + ',' + types.toSource(bootTemplateUrl) + ');');
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + tools.toSource(state.options, 15) + ',' + tools.toSource(state.modules, 5) + ',' + tools.toSource(defaultIntegrity) + ',' + tools.toSource(doodadPackageUrl) + ',' + tools.toSource(bootTemplateUrl) + ');');
 														state.modules = null;
 													};
 													parseNode(child, state);
@@ -558,7 +558,7 @@ module.exports = {
 								promises: [],
 								cacheId: null,
 								modules: null,
-								options: types.nullObject(),
+								options: tools.nullObject(),
 							};
 
 
@@ -594,7 +594,7 @@ module.exports = {
 						_new: types.SUPER(function _new(path, type, /*optional*/options) {
 							this._super();
 							this.type = type;
-							this.options = types.extend({}, options);
+							this.options = tools.extend({}, options);
 							this.name = path.file.replace(/\./g, '_');
 							this.path = path;
 							this.parents = new types.Map();

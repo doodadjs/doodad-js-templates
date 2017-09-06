@@ -437,7 +437,7 @@ module.exports = {
 							const Promise = types.getPromise();
 							let compiledAttrs = this.__compiledAttrs;
 							if (!compiledAttrs) {
-								this.__compiledAttrs = compiledAttrs = types.nullObject();
+								this.__compiledAttrs = compiledAttrs = tools.nullObject();
 							};
 							compiledAttrs[key] = function() {
 								let srcAttr = compiledAttrs[src];
@@ -454,7 +454,7 @@ module.exports = {
 
 						compileAttr: doodad.OVERRIDE(function asyncCompileAttr(key, value) {
 							if (!this.__compiledAttrs) {
-								this.__compiledAttrs = types.nullObject();
+								this.__compiledAttrs = tools.nullObject();
 							};
 							this.__compiledAttrs[key] = function() {
 								return value;

@@ -69,7 +69,7 @@ module.exports = {
 				// Natives
 				//===================================
 					
-				//types.complete(_shared.Natives, {
+				//tools.complete(_shared.Natives, {
 				//});
 					
 				//===================================
@@ -96,15 +96,13 @@ module.exports = {
 							console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
 						};
 
-						const minify = types.get(item, 'minify', false);
-
 						const ddt = templatesHtml.DDT.$get(source, options);
 
 						return ddt.open()
 							.then(function(dummy) {
 								const ddtType = ddt.doc.getRoot().getAttr('type');
 
-								const variables = types.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
+								const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
 									ddtType: ddtType,
 									ddtVariables: ddt.getScriptVariables(),
 									cacheEnabled: ddt.cache,
