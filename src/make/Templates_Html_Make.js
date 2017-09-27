@@ -24,113 +24,111 @@
 //	limitations under the License.
 //! END_REPLACE()
 
-module.exports = {
-	add: function add(DD_MODULES) {
-		DD_MODULES = (DD_MODULES || {});
-		DD_MODULES['Doodad.Templates.Html.Make'] = {
-			version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
-			dependencies: [
-				{
-					name: 'doodad-js-make',
-					version: /*! REPLACE_BY(TO_SOURCE(VERSION('doodad-js-make'))) */ null /*! END_REPLACE() */,
-					type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "doodad-js-make"))) */ 'Package' /*! END_REPLACE()*/,
-				},
-				{
-					name: 'doodad-js-templates',
-					version: /*! REPLACE_BY(TO_SOURCE(VERSION('doodad-js-templates'))) */ null /*! END_REPLACE() */,
-					type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "doodad-js-templates"))) */ 'Package' /*! END_REPLACE()*/,
-				},
-			],
-			
-			create: function create(root, /*optional*/_options, _shared) {
-				"use strict";
-
-				//===================================
-				// Get namespaces
-				//===================================
-					
-				const doodad = root.Doodad,
-					types = doodad.Types,
-					tools = doodad.Tools,
-					nodejs = doodad.NodeJs,
-					files = tools.Files,
-					make = root.Make,
-					file = make.File,
-					io = doodad.IO,
-					minifiers = io.Minifiers,
-					templates = doodad.Templates,
-					templatesHtml = templates.Html,
-					templatesHtmlMake = templatesHtml.Make,
-					xml = tools.Xml,
-					
-					nodeFs = require('fs');
-
-				//===================================
-				// Natives
-				//===================================
-					
-				//tools.complete(_shared.Natives, {
-				//});
-					
-				//===================================
-				// Internal
-				//===================================
-					
-				//const __Internal__ = {
-				//};
-				
-				
-				templatesHtmlMake.REGISTER(make.Operation.$extend(
-				{
-					$TYPE_NAME: 'Compile',
-
-					execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
-						const Promise = types.getPromise();
-
-						const source = this.taskData.parseVariables(item.source, { isPath: true });
-						const dest = this.taskData.parseVariables(item.destination, { isPath: true });
-
-						console.info(tools.format("Compiling template '~0~' to '~1~'...", [source, dest]));
-
-						if (!xml.isAvailable({schemas: true})) {
-							console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
-						};
-
-						const ddt = templatesHtml.DDT.$get(source, options);
-
-						return ddt.open()
-							.then(function(dummy) {
-								const ddtType = ddt.doc.getRoot().getAttr('type');
-
-								const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
-									ddtType: ddtType,
-									ddtVariables: ddt.getScriptVariables(),
-									cacheEnabled: ddt.cache,
-									cacheDuration: ddt.cacheDuration,
-									encoding: ddt.options.encoding,
-									renderTemplateBody: ddt.toString('', true),
-								});
-
-								return {
-									'class': file.Javascript,
-									source: '~doodad-js-templates/src/make/res/ddtx.templ.js',
-									destination: dest,
-									runDirectives: true,
-									variables: variables,
-								};
-							}, this);
-					}),
-				}));
-				
-
-				//===================================
-				// Init
-				//===================================
-				//return function init(/*optional*/options) {
-				//};
+exports.add = function add(DD_MODULES) {
+	DD_MODULES = (DD_MODULES || {});
+	DD_MODULES['Doodad.Templates.Html.Make'] = {
+		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
+		dependencies: [
+			{
+				name: 'doodad-js-make',
+				version: /*! REPLACE_BY(TO_SOURCE(VERSION('doodad-js-make'))) */ null /*! END_REPLACE() */,
+				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "doodad-js-make"))) */ 'Package' /*! END_REPLACE()*/,
 			},
-		};
-		return DD_MODULES;
-	},
+			{
+				name: 'doodad-js-templates',
+				version: /*! REPLACE_BY(TO_SOURCE(VERSION('doodad-js-templates'))) */ null /*! END_REPLACE() */,
+				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "doodad-js-templates"))) */ 'Package' /*! END_REPLACE()*/,
+			},
+		],
+			
+		create: function create(root, /*optional*/_options, _shared) {
+			"use strict";
+
+			//===================================
+			// Get namespaces
+			//===================================
+					
+			const doodad = root.Doodad,
+				types = doodad.Types,
+				tools = doodad.Tools,
+				nodejs = doodad.NodeJs,
+				files = tools.Files,
+				make = root.Make,
+				file = make.File,
+				io = doodad.IO,
+				minifiers = io.Minifiers,
+				templates = doodad.Templates,
+				templatesHtml = templates.Html,
+				templatesHtmlMake = templatesHtml.Make,
+				xml = tools.Xml,
+					
+				nodeFs = require('fs');
+
+			//===================================
+			// Natives
+			//===================================
+					
+			//tools.complete(_shared.Natives, {
+			//});
+					
+			//===================================
+			// Internal
+			//===================================
+					
+			//const __Internal__ = {
+			//};
+				
+				
+			templatesHtmlMake.REGISTER(make.Operation.$extend(
+			{
+				$TYPE_NAME: 'Compile',
+
+				execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
+					const Promise = types.getPromise();
+
+					const source = this.taskData.parseVariables(item.source, { isPath: true });
+					const dest = this.taskData.parseVariables(item.destination, { isPath: true });
+
+					console.info(tools.format("Compiling template '~0~' to '~1~'...", [source, dest]));
+
+					if (!xml.isAvailable({schemas: true})) {
+						console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
+					};
+
+					const ddt = templatesHtml.DDT.$get(source, options);
+
+					return ddt.open()
+						.then(function(dummy) {
+							const ddtType = ddt.doc.getRoot().getAttr('type');
+
+							const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
+								ddtType: ddtType,
+								ddtVariables: ddt.getScriptVariables(),
+								cacheEnabled: ddt.cache,
+								cacheDuration: ddt.cacheDuration,
+								encoding: ddt.options.encoding,
+								renderTemplateBody: ddt.toString('', true),
+							});
+
+							return {
+								'class': file.Javascript,
+								source: '~doodad-js-templates/src/make/res/ddtx.templ.js',
+								destination: dest,
+								runDirectives: true,
+								variables: variables,
+							};
+						}, this);
+				}),
+			}));
+				
+
+			//===================================
+			// Init
+			//===================================
+			//return function init(/*optional*/options) {
+			//};
+		},
+	};
+	return DD_MODULES;
 };
 //! END_MODULE()
