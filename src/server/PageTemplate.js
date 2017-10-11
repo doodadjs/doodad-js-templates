@@ -24,6 +24,15 @@
 //	limitations under the License.
 //! END_REPLACE()
 
+//! IF_SET("mjs")
+	//! INJECT("import {default as nodeCrypto} from 'crypto';");
+//! ELSE()
+	const nodeCrypto = require('crypto');
+//! END_IF()
+
+const nodeCryptoCreateHash = nodeCrypto.createHash;
+
+
 exports.add = function add(DD_MODULES) {
 	DD_MODULES = (DD_MODULES || {});
 	DD_MODULES['Doodad.Templates.Html/PageTemplate'] = {
@@ -38,6 +47,7 @@ exports.add = function add(DD_MODULES) {
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
+				modules = doodad.Modules,
 				namespaces = doodad.Namespaces,
 				templates = doodad.Templates,
 				templatesHtml = templates.Html,
@@ -48,10 +58,8 @@ exports.add = function add(DD_MODULES) {
 				nodeJsIO = nodeJs.IO,
 				nodejsIOInterfaces = nodeJsIO.Interfaces,
 				safeEval = tools.SafeEval,
-				files = tools.Files,
+				files = tools.Files;
 				
-				nodeCrypto = require('crypto'),
-				nodeFs = require('fs');
 				
 			//const __Internal__ = {
 			//};
@@ -279,7 +287,7 @@ exports.add = function add(DD_MODULES) {
 						const list = tools.split(type.toLowerCase(), ',', 2); // "algorithm,encoding"
 
 						return Promise.create(function hashPromise(resolve, reject) {
-							const hashStream = nodeCrypto.createHash(list[0]);
+							const hashStream = nodeCryptoCreateHash(list[0]);
 
 							const end = function end(err, hash) {
 								if (err) {
