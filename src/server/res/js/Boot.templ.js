@@ -33,7 +33,15 @@
 
 		const global = window;
 
+		const SECRET = ((typeof Symbol === 'function') ? Symbol() : []);
+
 		const options = /*! INJECT(TO_SOURCE(VAR("options"), 15)) */;
+
+		if (!options.startup) {
+			options.startup = {};
+		};
+
+		options.startup.secret = SECRET;
 
 		global.createRoot(null, options)
 			.then(function(root) {
