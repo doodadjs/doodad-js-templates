@@ -112,10 +112,11 @@ exports.add = function add(DD_MODULES) {
 							}, null, this);
 					}),
 
-					// <PRB> Because of async/await, the following must be PUBLIC...
+					// <PRB> Because of async/await, the following must be all PUBLIC...
 
 					compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
 					compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
+
 					asyncForEach: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(items, fn)
 					asyncInclude: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
 					asyncScript: doodad.PUBLIC(doodad.ASYNC(doodad.MUST_OVERRIDE())), // function(fn)
@@ -182,8 +183,10 @@ exports.add = function add(DD_MODULES) {
 						
 					getScriptVariables: function getScriptVariables() {
 						return (function() {
-							const Promise = root.Doodad.Types.getPromise();
-							const escapeHtml = root.Doodad.Tools.escapeHtml;
+							const types = root.Doodad.Types;
+							const tools = root.Doodad.Tools;
+							const Promise = types.getPromise();
+							const escapeHtml = tools.escapeHtml;
 						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 					},
 						
@@ -205,395 +208,482 @@ exports.add = function add(DD_MODULES) {
 					parse: function parse() {
 						const Promise = types.getPromise();
 
-						const DDI_URI = "http://www.doodad-js.local/schemas/ddi"
-						const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
-						const HTML_URI = "http://www.doodad-js.local/schemas/html5"
+						return Promise.try(function() {
+							const DDI_URI = "http://www.doodad-js.local/schemas/ddi"
+							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
+							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
 
-						const DEFAULT_DOODAD_PKG_URL = '?res=doodad-js/doodad-js.min.js';
-						const DEFAULT_BOOT_TEMPL_URL = '?res=doodad-js-templates/Boot.min.js';
+							const DEFAULT_DOODAD_PKG_URL = '?res=doodad-js/doodad-js.min.js';
+							const DEFAULT_BOOT_TEMPL_URL = '?res=doodad-js-templates/Boot.min.js';
 
-						const RESERVED_OBJ_PROPS = ['__proto__', 'toString', 'toValue', 'toJSON', 'toSource'];
+							const RESERVED_OBJ_PROPS = ['__proto__', 'toString', 'toValue', 'toJSON', 'toSource'];
 							
-						const doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
-						if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
-							throw new types.ParseError("Document type is missing or invalid.");
-						};
-
-						const ddi = this.doc.getRoot(),
-							self = this,
-							codeParts = self.codeParts;
-
-						let cache = false;
-						let cacheDuration = null;
-						let defaultIntegrity = null;
-						let doodadPackageUrl = DEFAULT_DOODAD_PKG_URL;
-						let bootTemplateUrl = DEFAULT_BOOT_TEMPL_URL;
-						if (self.type === 'ddt') {
-							cache = types.toBoolean(ddi.getAttr('cache'));
-							if (cache) {
-								cacheDuration = types.toInteger(ddi.getAttr('cacheDuration'));
+							const doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
+							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
+								throw new types.ParseError("Document type is missing or invalid.");
 							};
-							defaultIntegrity = ddi.getAttr('defaultIntegrity');
-							doodadPackageUrl = ddi.getAttr('doodadPackageUrl') || DEFAULT_DOODAD_PKG_URL;
-							bootTemplateUrl = ddi.getAttr('bootTemplateUrl') || DEFAULT_BOOT_TEMPL_URL;
-						};
 
-						const writeHTML = function writeHTML(state) {
-							if (state.html) {
-								state.writes += tools.toSource(state.html) + ' + ';
-								state.html = '';
-							};
-						};
-							
-						const fnHeader = function fnHeader() {
-							if (!types.hasAsyncAwait()) {
-								codeParts[codeParts.length] = 'let pagePromise = Promise.resolve();';
-							};
-						};
+							const ddi = this.doc.getRoot(),
+								self = this,
+								codeParts = self.codeParts;
 
-						const startFn = function startFn(/*optional*/args) {
-							if (types.hasAsyncAwait()) {
-								codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
-							} else {
-								codeParts[codeParts.length] = '(function(' + (args || '') + ') {';
-							};
-							fnHeader();
-						};
 
-						const startAsync = function startAsync(code) {
-							if (types.hasAsyncAwait()) {
-								return 'await ' + code;
-							} else {
-								return 'pagePromise = pagePromise.then(function() {return ' + code;
-							};
-						};
-
-						const endAsync = function endAsync(/*optional*/code) {
-							if (types.hasAsyncAwait()) {
-								return (code || '');
-							} else {
-								return (code || '') + '}, null, this);';
-							};
-						};
-
-						const fnFooter = function fnFooter() {
-							if (!types.hasAsyncAwait()) {
-								codeParts[codeParts.length] = 'return pagePromise;';
-							};
-						};
-
-						const endFn = function endFn() {
-							fnFooter();
-							codeParts[codeParts.length] = '})';
-						};
-
-						const writeAsyncWrites = function writeAsyncWrites(state) {
-							if (state.writes) {
-								codeParts[codeParts.length] = __Internal__.surroundAsync('page.writeAsync(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
-								state.writes = '';
-							};
-						};
-							
-						// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
-						// TODO: SafeEval on expressions
-
-						const parseNode = function parseNode(node, state) {
-							let hasVariables = false;
-										
-							node.getChildren().forEach(function forEachChild(child, pos, ar) {
-								if (child instanceof xml.Element) {
-									const name = child.getName(),
-										ns = child.getBaseURI();
-
-									if (ns === DDI_URI) {
-										if (name === 'body') {
-											parseNode(child, state);
+							const getAttrValue = function _getAttrValue(attrs, name, type, defaultValue, exprIsValid) {
+								const result = attrs.find(name);
+								let isExpr = false;
+								let value = null;
+								if (result.length > 0) {
+									const attr = result[0];
+									value = attr.getValue();
+									if (attr.getBaseURI() === DDT_URI) {
+										if (exprIsValid) {
+											isExpr = true;
+										} else {
+											value = defaultValue;
 										};
-									} else if ((ns === DDT_URI) && (name !== 'html')) {
-										writeHTML(state);
-										writeAsyncWrites(state);
-										if (!state.isModules && (name === 'when-true')) {
-											if (!state.isIf) {
-												if (!hasVariables) {
-													hasVariables = true;
-													codeParts[codeParts.length] = startAsync('page.asyncScript(');
-													startFn();
-												};
-												codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
+									};
+								} else {
+									value = defaultValue;
+								};
+								if (type && !isExpr) {
+									value = type(value);
+								};
+								return [isExpr, value];
+							};
+
+
+							let cache,
+								cacheDuration,
+								defaultIntegrity;
+
+							let doodadPackageUrl,
+								bootTemplateUrl;
+
+							if (self.type === 'ddt') {
+								const attrs = ddi.getAttrs();
+
+								cache = getAttrValue(attrs, 'cache', types.toBoolean, false, false);
+								cacheDuration = getAttrValue(attrs, 'cacheDuration', types.toInteger, null, false);
+								defaultIntegrity = getAttrValue(attrs, 'defaultIntegrity', types.toString, null, false);
+
+								doodadPackageUrl = getAttrValue(attrs, 'doodadPackageUrl', types.toString, DEFAULT_DOODAD_PKG_URL, true);
+								bootTemplateUrl = getAttrValue(attrs, 'bootTemplateUrl', types.toString, DEFAULT_BOOT_TEMPL_URL, true);
+
+							} else {
+								cache = [false, false];
+								cacheDuration = [false, null];
+								defaultIntegrity = [false, null];
+
+								doodadPackageUrl = [false, null];
+								bootTemplateUrl = [false, null];
+
+							};
+
+
+							const writeHTML = function _writeHTML(state) {
+								if (state.html) {
+									state.writes += tools.toSource(state.html) + ' + ';
+									state.html = '';
+								};
+							};
+							
+							const fnHeader = function _fnHeader() {
+								if (!types.hasAsyncAwait()) {
+									codeParts[codeParts.length] = "let pagePromise = Promise.resolve();";
+								};
+
+								// Expressions
+								codeParts[codeParts.length] = "const evalExpr = (function() {";
+									codeParts[codeParts.length] = "let evalFn = null;";
+									codeParts[codeParts.length] = "return function(expr, refresh) {";
+										codeParts[codeParts.length] = "if (refresh) {";
+											codeParts[codeParts.length] = "evalFn = null;";
+										codeParts[codeParts.length] = "};";
+										codeParts[codeParts.length] = "let fn = evalFn;";
+										codeParts[codeParts.length] = "if (!evalFn) {";
+											codeParts[codeParts.length] = "const variables = tools.nullObject(page.options.variables);";
+											codeParts[codeParts.length] = "fn = " + tools.generateCreateEval() + "(types.keys(variables)).apply(null, types.values(variables));";
+										codeParts[codeParts.length] = "};";
+										codeParts[codeParts.length] = "const result = (expr ? fn(expr) : undefined);";
+										codeParts[codeParts.length] = "if (!evalFn && !refresh) {";
+											codeParts[codeParts.length] = "evalFn = fn;";
+										codeParts[codeParts.length] = "};";
+										codeParts[codeParts.length] = "return result;";
+									codeParts[codeParts.length] = "};";
+								codeParts[codeParts.length] = "})();";
+							};
+
+							const startFn = function _startFn(/*optional*/args) {
+								if (types.hasAsyncAwait()) {
+									codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
+								} else {
+									codeParts[codeParts.length] = '(function(' + (args || '') + ') {';
+								};
+								fnHeader();
+							};
+
+							const startAsync = function _startAsync(code) {
+								if (types.hasAsyncAwait()) {
+									return 'await ' + code;
+								} else {
+									return 'pagePromise = pagePromise.then(function() {return ' + code;
+								};
+							};
+
+							const endAsync = function _endAsync(/*optional*/code) {
+								if (types.hasAsyncAwait()) {
+									return (code || '');
+								} else {
+									return (code || '') + '}, null, this);';
+								};
+							};
+
+							const fnFooter = function _fnFooter() {
+								if (!types.hasAsyncAwait()) {
+									codeParts[codeParts.length] = 'return pagePromise;';
+								};
+							};
+
+							const endFn = function _endFn() {
+								fnFooter();
+								codeParts[codeParts.length] = '})';
+							};
+
+							const writeAsyncWrites = function _writeAsyncWrites(state) {
+								if (state.writes) {
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.writeAsync(' + state.writes.slice(0, -3) + ');');   // remove extra " + "
+									state.writes = '';
+								};
+							};
+							
+							const prepareExpr = function _prepareExpr(expr) {
+								return 'evalExpr(' + tools.toSource(expr) + ', false)';
+							};
+
+							const getExprFromAttrVal = function _getExprFromAttrVal(attrVal, refresh) {
+								return (attrVal[0] ? prepareExpr(attrVal[1]) : tools.toSource(attrVal[1]));
+							};
+
+							const reduceStateOptions = function _reduceStateOptions(options) {
+								return '{' + tools.reduce(options, function(result, val, name) {
+									if (types.isJsObject(val)) {
+										return result + ',' + tools.toSource(name) + ':' + reduceStateOptions(val);
+									} else {
+										return result + ',' + tools.toSource(name) + ':' + getExprFromAttrVal(val);
+									};
+								}, '').slice(1) + '}';
+							};
+
+
+							// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
+							// TODO: SafeEval on expressions
+
+							const parseNode = function _parseNode(node, state) {
+								let hasVariables = false;
+
+								node.getChildren().forEach(function forEachChild(child, pos, ar) {
+									if (types._instanceof(child, xml.Element)) {
+										const name = child.getName(),
+											ns = child.getBaseURI();
+
+										if (ns === DDI_URI) {
+											if (name === 'body') {
+												const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
+												parseNode(child, newState);
 											};
-											codeParts[codeParts.length] = 'if (__expr__) {';
-											const newState = tools.extend({}, state, {isIf: false});
-											parseNode(child, newState);
-											writeHTML(newState);
-											writeAsyncWrites(newState);
-											codeParts[codeParts.length] = '};';
-										} else if (!state.isModules && (name === 'when-false')) {
-											if (!state.isIf) {
-												if (!hasVariables) {
-													hasVariables = true;
-													codeParts[codeParts.length] = startAsync('page.asyncScript(');
-													startFn();
+										} else if ((ns === DDT_URI) && (name !== 'html')) {
+											writeHTML(state);
+											writeAsyncWrites(state);
+											if (!state.isModules && (name === 'when-true')) {
+												if (!state.isIf) {
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
+													};
+													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
 												};
-												codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
-											};
-											codeParts[codeParts.length] = 'if (!__expr__) {';
-											const newState = tools.extend({}, state, {isIf: false});
-											parseNode(child, newState);
-											writeHTML(newState);
-											writeAsyncWrites(newState);
-											codeParts[codeParts.length] = '};';
-										} else if (!state.isIf) {
-											if (!state.isModules && (name === 'if')) {
-												if (!hasVariables) {
-													hasVariables = true;
-													codeParts[codeParts.length] = startAsync('page.asyncScript(');
-													startFn();
-												};
-												codeParts[codeParts.length] = ('const __expr__ = !!(' + child.getAttr('expr') + ');');
-												const newState = tools.extend({}, state, {isIf: true});
+												codeParts[codeParts.length] = 'if (__expr__) {';
+												const newState = tools.extend(state, {isHtml: false, isIf: false});
 												parseNode(child, newState);
 												writeHTML(newState);
 												writeAsyncWrites(newState);
-											} else if (!state.isModules && (name === 'script')) {
-												const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
-												if (vars.length) {
-													codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
+												codeParts[codeParts.length] = '};';
+											} else if (!state.isModules && (name === 'when-false')) {
+												if (!state.isIf) {
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
+													};
+													codeParts[codeParts.len+gth] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
 												};
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
-											} else if (!state.isModules && (name === 'for-each')) {
-												codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
-												startFn(child.getAttr('item') || 'item');
-												parseNode(child, state);
-												writeHTML(state);
-												writeAsyncWrites(state);
-												endFn();
-												codeParts[codeParts.length] = endAsync(');');
-											} else if (!state.isModules && (name === 'eval')) {
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(escapeHtml((' + child.getChildren().getAt(0).getValue() + ') + ""))});'); // CDATA or Text
-											} else if (!state.isModules && (name === 'variable')) {
-												// TODO: Fix identation
-												const name = (child.getAttr('name') || 'x');
-												if (!hasVariables) {
-													hasVariables = true;
-													codeParts[codeParts.length] = startAsync('page.asyncScript(');
-													startFn();
-												};
-												codeParts[codeParts.length] = ('let ' + name + ' = null;');
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + name + ' = (' + (child.getAttr('expr') || '""') + ')});');
-											} else if (!state.isModules && (name === 'include')) {
-												let path = child.getAttr('src');
-												path = self.path.set({file: null}).combine(path);
-												const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
-												codeParts[codeParts.length] = ddi;
-												state.promises[state.promises.length] = ddi.open();
-												ddi.parents.set(self, self.path.toString());
-											} else if (!state.isModules && (name === 'cache') && !state.cacheId) {
-												state.cacheId = child.getAttr('id');
-												const duration = child.getAttr("duration");
-												codeParts[codeParts.length] = startAsync('page.asyncCache(' + tools.toSource(state.cacheId) + ', ' + tools.toSource(duration) + ', ');
-												startFn();
-												parseNode(child, state);
-												writeHTML(state);
-												writeAsyncWrites(state);
-												endFn();
-												codeParts[codeParts.length] = endAsync(');');
-												state.cacheId = null;
-											} else if (!state.isModules && (name === 'modules')) {
-												const newState = tools.extend({}, state, {isModules: true, modules: []});
+												codeParts[codeParts.length] = 'if (!__expr__) {';
+												const newState = tools.extend(state, {isHtml: false, isIf: false});
 												parseNode(child, newState);
-												state.modules = newState.modules;
-											} else if (state.isModules && !state.isOptions && (name === 'options')) {
-												const newState = tools.extend({}, state, {isOptions: true, modules: null});
-												parseNode(child, newState);
-											} else if (state.isModules && state.isOptions && (name === 'option')) {
-												const optModule = child.getAttr('module'); // required
-												if (optModule && (tools.indexOf(RESERVED_OBJ_PROPS, optModule) < 0)) {
-													const optKey = child.getAttr('key'); // optional
-													const optVal = child.getAttr('value') || ''; // required
-													if (optKey) {
-														const MAX_DEPTH = 15;
-														const opt = state.options[optModule] || {};
-														const keys = optKey.split('.'),
-															keysLen = keys.length;
-														let lastOpt = opt;
-														for (let i = 0; (i < MAX_DEPTH) && (i < keysLen - 1); i++) {
-															const key = keys[i];
-															if (!key || (tools.indexOf(RESERVED_OBJ_PROPS, key) >= 0)) {
-																// Empty string or reserved key.
-																lastOpt = null;
-																break;
-															};
-															const newOpt = lastOpt[key] || {};
-															lastOpt[key] = newOpt;
-															lastOpt = newOpt;
-														};
-														const lastKey = keys[keysLen - 1];
-														if (lastKey && lastOpt && (tools.indexOf(RESERVED_OBJ_PROPS, lastKey) < 0)) {
-															lastOpt[lastKey] = optVal;
-															state.options[optModule] = opt;
-														} else {
-															throw new types.ParseError("Invalid value for the 'key' attribute in an 'option' element.");
-														};
-													} else {
-														state.options[optModule] = optVal;
+												writeHTML(newState);
+												writeAsyncWrites(newState);
+												codeParts[codeParts.length] = '};';
+											} else if (!state.isIf) {
+												if (!state.isModules && (name === 'if')) {
+													if (!hasVariables) {
+														hasVariables = true;
+														codeParts[codeParts.length] = startAsync('page.asyncScript(');
+														startFn();
 													};
-												} else {
-													throw new types.ParseError("Invalid value for the 'module' attribute in an 'option' element.");
-												};
-											} else if (state.isModules && !state.isOptions && state.modules && (name === 'load')) {
-												state.modules.push({
-													module: child.getAttr("module") || null,
-													path: child.getAttr("path") || null,
-													optional: types.toBoolean(child.getAttr("optional") || false),
-													integrity: child.getAttr("integrity") || defaultIntegrity || null,
-												});
-											};
-										};
-									} else if ((ns === HTML_URI) || ((ns === DDT_URI) && (name === 'html'))) {
-										if (!state.isIf && !state.isModules) {
-											let addCharset = false,
-												addModules = false;
-											if (name === 'head') {
-												// TODO: Replace by an XPATH search when they will be available in doodad-js-xml.
-												const metaNodes = child.getChildren().find('meta');
-												const len = metaNodes.length;
-												addCharset = true;
-												for (let i = 0; i < len; i++) {
-													const metaNode = metaNodes[i];
-													if (metaNode.hasAttr('charset') || (metaNode.hasAttr('http-equiv') && (metaNode.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
-														addCharset = false;
-														break;
+													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
+													const newState = tools.extend(state, {isHtml: false, isIf: true});
+													parseNode(child, newState);
+													writeHTML(newState);
+													writeAsyncWrites(newState);
+												} else if (!state.isModules && (name === 'script')) {
+													const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
+													if (vars.length) {
+														codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 													};
-												};
-											} else if (name === 'body') {
-												addModules = !!state.modules;
-											};
-											state.html += '<' + name;
-											const ignoreAttrs = ['async'];
-											if (name === 'script') {
-												if (child.hasAttr('async')) {
-													state.html += ' async';
-												};
-											};
-											const attrs = child.getAttrs();
-											let integrity = null;
-											if (name === 'script') {
-												integrity = 'src';
-											} else if (name === 'link') {
-												integrity = 'href';
-											};
-											if ((!integrity || !defaultIntegrity) && tools.findItem(attrs, function(attr) {
-												return (attr.getBaseURI() === DDT_URI);
-											}) === null) {
-												attrs.forEach(function forEachAttr(attr) {
-													const key = attr.getName();
-													if (ignoreAttrs.indexOf(key) < 0) {
-														const value = attr.getValue();
-														state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
-													};
-												}, this);
-											} else {
-												writeHTML(state);
-												writeAsyncWrites(state);
-												let integrityValue = defaultIntegrity;
-												attrs.forEach(function forEachAttr(attr) {
-													const key = attr.getName();
-													if (ignoreAttrs.indexOf(key) < 0) {
-														const value = attr.getValue(),
-															compute = (attr.getBaseURI() === DDT_URI);
-														if (compute) {
-															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ',(' + value + '));');
-														} else {
-															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ',' + tools.toSource(value) + ');');
-														};
-													};
-												}, this);
-												if (integrity && integrityValue) {
-													codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + tools.toSource('integrity') + ',' + tools.toSource(integrityValue) + ',' + tools.toSource(integrity) + ');');
-												};
-												codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
-											};
-											const children = child.getChildren();
-											// <PRB> Browsers do not well support "<name />"
-											const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'track'], name) < 0);
-											let hasChildren = addCharset || !!children.getCount() || mandatoryContent;
-											if (hasChildren) {
-												state.html += '>';
-												if (addCharset) {
-													state.html += '<meta charset="UTF-8"/>';
-												};
-												if (addModules) {
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
+												} else if (!state.isModules && (name === 'for-each')) {
+													codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
+													startFn(child.getAttr('item') || 'item');
+													const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
+													parseNode(child, newState);
 													writeHTML(state);
 													writeAsyncWrites(state);
-													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + tools.toSource(state.options, 15) + ',' + tools.toSource(state.modules, 5) + ',' + tools.toSource(defaultIntegrity) + ',' + tools.toSource(doodadPackageUrl) + ',' + tools.toSource(bootTemplateUrl) + ');');
-													state.modules = null;
+													endFn();
+													codeParts[codeParts.length] = endAsync(');');
+												} else if (!state.isModules && (name === 'eval')) {
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(escapeHtml(' + prepareExpr(child.getChildren().getAt(0).getValue()) + ' + ""))});'); // CDATA or Text
+												} else if (!state.isModules && (name === 'variable')) {
+													const name = child.getAttr('name'); // required
+													const expr = child.getAttr('expr'); // required
+													if (name) {
+														if (expr) {
+															codeParts[codeParts.length] = 'let ' + name + ' = ' + prepareExpr(expr) + ';';
+														} else {
+															codeParts[codeParts.length] = 'let ' + name + ' = null;';
+														};
+													};
+												} else if (!state.isModules && (name === 'include')) {
+													let path = child.getAttr('src');
+													path = self.path.set({file: null}).combine(path);
+													const ddi = templatesHtml.DDI.$get(path, 'ddi', self.options);
+													codeParts[codeParts.length] = ddi;
+													state.promises[state.promises.length] = ddi.open();
+													ddi.parents.set(self, self.path.toString());
+												} else if (!state.isModules && (name === 'cache') && !state.cacheId) {
+													state.cacheId = child.getAttr('id');
+													const duration = child.getAttr("duration");
+													codeParts[codeParts.length] = startAsync('page.asyncCache(' + tools.toSource(state.cacheId) + ', ' + tools.toSource(duration) + ', ');
+													startFn();
+													const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
+													parseNode(child, newState);
+													writeHTML(state);
+													writeAsyncWrites(state);
+													endFn();
+													codeParts[codeParts.length] = endAsync(');');
+													state.cacheId = null;
+												} else if (!state.isModules && (name === 'modules')) {
+													const newState = tools.extend({}, state, {isModules: true, modules: [], isHtml: false});
+													parseNode(child, newState);
+													state.modules = newState.modules;
+												} else if (state.isModules && !state.isOptions && (name === 'options')) {
+													const newState = tools.extend({}, state, {isOptions: true, modules: null, isHtml: false});
+													parseNode(child, newState);
+												} else if (state.isModules && state.isOptions && (name === 'option')) {
+													const optModule = child.getAttr('module'); // required
+													if (optModule && (tools.indexOf(RESERVED_OBJ_PROPS, optModule) < 0)) {
+														const attrs = child.getAttrs();
+														const optKey = getAttrValue(attrs, 'key', types.toString, null, false); // optional
+														const optVal = getAttrValue(attrs, 'value', null, null, true); // required
+														if (optKey[1]) {
+															const MAX_DEPTH = 15;
+															const opt = state.options[optModule] || {};
+															const keys = optKey[1].split('.'),
+																keysLen = keys.length;
+															let lastOpt = opt;
+															for (let i = 0; (i < MAX_DEPTH) && (i < keysLen - 1); i++) {
+																const key = keys[i];
+																if (!key || (tools.indexOf(RESERVED_OBJ_PROPS, key) >= 0)) {
+																	// Empty string or reserved key.
+																	lastOpt = null;
+																	break;
+																};
+																const newOpt = lastOpt[key] || {};
+																lastOpt[key] = newOpt;
+																lastOpt = newOpt;
+															};
+															const lastKey = keys[keysLen - 1];
+															if (lastKey && lastOpt && (tools.indexOf(RESERVED_OBJ_PROPS, lastKey) < 0)) {
+																lastOpt[lastKey] = optVal;
+																state.options[optModule] = opt;
+															} else {
+																throw new types.ParseError("Invalid value for the 'key' attribute in an 'option' element.");
+															};
+														} else {
+															state.options[optModule] = optVal;
+														};
+													} else {
+														throw new types.ParseError("Invalid value for the 'module' attribute in an 'option' element.");
+													};
+												} else if (state.isModules && !state.isOptions && state.modules && (name === 'load')) {
+													state.modules.push({
+														module: child.getAttr("module") || null,
+														path: child.getAttr("path") || null,
+														optional: types.toBoolean(child.getAttr("optional") || false),
+														integrity: child.getAttr("integrity") || defaultIntegrity[1] || null,
+													});
 												};
-												parseNode(child, state);
-												state.html += '</' + name + '>';
-											} else {
-												state.html += '/>';
+											};
+										} else if ((ns === HTML_URI) || ((ns === DDT_URI) && (name === 'html'))) {
+											if (!state.isIf && !state.isModules) {
+												let addCharset = false,
+													addModules = false;
+												if (name === 'head') {
+													// TODO: Replace by an XPATH search when they will be available in doodad-js-xml.
+													const metaNodes = child.getChildren().find('meta');
+													const len = metaNodes.length;
+													addCharset = true;
+													for (let i = 0; i < len; i++) {
+														const metaNode = metaNodes[i];
+														if (metaNode.hasAttr('charset') || (metaNode.hasAttr('http-equiv') && (metaNode.getAttr('http-equiv').toLowerCase() === 'content-type'))) {
+															addCharset = false;
+															break;
+														};
+													};
+												} else if (name === 'body') {
+													addModules = !!state.modules;
+												};
+												state.html += '<' + name;
+												const ignoreAttrs = ['async'];
+												if (name === 'script') {
+													if (child.hasAttr('async')) {
+														state.html += ' async';
+													};
+												};
+												const attrs = child.getAttrs();
+												let integrity = null;
+												if (name === 'script') {
+													integrity = 'src';
+												} else if (name === 'link') {
+													integrity = 'href';
+												};
+												if ((!integrity || !defaultIntegrity[1]) && tools.findItem(attrs, function(attr) {
+													return (attr.getBaseURI() === DDT_URI);
+												}) === null) {
+													attrs.forEach(function forEachAttr(attr) {
+														const key = attr.getName();
+														if (ignoreAttrs.indexOf(key) < 0) {
+															const value = attr.getValue();
+															state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
+														};
+													}, this);
+												} else {
+													writeHTML(state);
+													writeAsyncWrites(state);
+													let integrityValue = defaultIntegrity[1];
+													attrs.forEach(function forEachAttr(attr) {
+														const key = attr.getName();
+														if (ignoreAttrs.indexOf(key) < 0) {
+															const value = attr.getValue(),
+																compute = (attr.getBaseURI() === DDT_URI);
+															if (compute) {
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ', ' + prepareExpr(value) + ');');
+															} else {
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ', ' + tools.toSource(value) + ');');
+															};
+														};
+													}, this);
+													if (integrity && integrityValue) {
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr(' + tools.toSource('integrity') + ',' + tools.toSource(integrityValue) + ',' + tools.toSource(integrity) + ');');
+													};
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
+												};
+												const children = child.getChildren();
+												// <PRB> Browsers do not well support "<name />"
+												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'track'], name) < 0);
+												let hasChildren = addCharset || !!children.getCount() || mandatoryContent;
+												if (hasChildren) {
+													state.html += '>';
+													if (addCharset) {
+														state.html += '<meta charset="UTF-8"/>';
+													};
+													if (addModules) {
+														writeHTML(state);
+														writeAsyncWrites(state);
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, 5) + ',' + getExprFromAttrVal(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl) + ',' + getExprFromAttrVal(bootTemplateUrl) + ');');
+														state.modules = null;
+													};
+													const newState = (state.isHtml ? state : tools.extend(state, {isHtml: true}));
+													parseNode(child, newState);
+													state.html += '</' + name + '>';
+												} else {
+													state.html += '/>';
+												};
 											};
 										};
+									} else if (state.isHtml && types._instanceof(child, xml.Text)) {
+										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
+									} else if (state.isHtml && types._instanceof(child, xml.CDATASection)) {
+										state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
 									};
-								} else if ((!state.isIf && !state.isModules) && (child instanceof xml.Text)) {
-									state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
-								} else if ((!state.isIf && !state.isModules) && (child instanceof xml.CDATASection)) {
-									state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
+								}, this);
+
+								if (hasVariables) {
+									endFn();
+									codeParts[codeParts.length] = endAsync(');');
 								};
-							}, this);
-
-							if (hasVariables) {
-								endFn();
-								codeParts[codeParts.length] = endAsync(');');
 							};
-						};
+
 							
-						const state = {
-							html: '',
-							writes: '',
-							isIf: false,
-							isModules: false,
-							isOptions: false,
-							promises: [],
-							cacheId: null,
-							modules: null,
-							options: tools.nullObject(),
-						};
-
-
-						fnHeader();
-
-						if (this.type === 'ddt') {
-							// TODO: Replace by XPATH search when it will be available in doodad-js-xml.
-							const doctypeNodes = ddi.getChildren().find('doctype')
-								.filter(function(doctypeNode) {
-									return doctypeNode.getBaseURI() === DDT_URI;
-								});
-							if (doctypeNodes.length) {
-								const valueNodes = doctypeNodes.getAt(0).getChildren();
-								state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n';
-							} else {
-								state.html += '<!DOCTYPE html>\n';
+							const state = {
+								html: '',
+								writes: '',
+								isIf: false,
+								isModules: false,
+								isOptions: false,
+								isHtml: false,
+								promises: [],
+								cacheId: null,
+								modules: null,
+								options: tools.nullObject(),
 							};
+
+
+							fnHeader();
+
+							if (this.type === 'ddt') {
+								// TODO: Replace by XPATH search when it will be available in doodad-js-xml.
+								const doctypeNodes = ddi.getChildren().find('doctype')
+									.filter(function(doctypeNode) {
+										return doctypeNode.getBaseURI() === DDT_URI;
+									});
+								if (doctypeNodes.length) {
+									const valueNodes = doctypeNodes.getAt(0).getChildren();
+									state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n';
+								} else {
+									state.html += '<!DOCTYPE html>\n';
+								};
+								writeHTML(state);
+							};
+
+							parseNode(ddi, state);
 							writeHTML(state);
-						};
-
-						parseNode(ddi, state);
-						writeHTML(state);
-						writeAsyncWrites(state);
-						fnFooter();
+							writeAsyncWrites(state);
+							fnFooter();
 
 							
-						self.cache = cache;
-						self.cacheDuration = cacheDuration;
+							self.cache = cache[1];
+							self.cacheDuration = cacheDuration[1];
 
-						return Promise.all(state.promises);
+
+							return Promise.all(state.promises);
+						}, this);
 					},
 
 					_new: types.SUPER(function _new(path, type, /*optional*/options) {
 						this._super();
 						this.type = type;
-						this.options = tools.extend({}, options);
+						this.options = tools.nullObject(options);
 						this.name = path.file.replace(/\./g, '_');
 						this.path = path;
 						this.parents = new types.Map();
@@ -601,32 +691,37 @@ exports.add = function add(DD_MODULES) {
 						
 					open: function open() {
 						const Promise = types.getPromise();
-						if (this.doc) {
-							// Already opened.
-							return Promise.resolve();
-						};
-						const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
-						return files.openFile(this.path, {encoding: encoding})
-							.then(function openFilePromise(stream) {
-								let promise = Promise.resolve(null);
-								if (xml.isAvailable({schemas: true})) {
-									promise = __Internal__.resourcesLoader.locate('./schemas/');
+
+						return Promise.try(function() {
+								if (this.doc) {
+									// Already opened.
+									return;
 								};
-								promise = promise.then(function(xsdRoot) {
-									let xsd = null;
-									if (xsdRoot) {
-										xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
-									};
-									return xml.parse(stream, {entities: __Internal__.entities, discardEntities: true, xsd: xsd});
-								}, null, this);
-								return promise
-									.then(function parseXmlPromise(doc) {
-										types.DESTROY(stream);
-										this.doc = doc;
-//console.log(require('util').inspect(this.doc));
-										this.codeParts = [];
-										return this.parse();
+								const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
+								return files.openFile(this.path, {encoding: encoding})
+									.then(function openFilePromise(stream) {
+										let promise = Promise.resolve(null);
+										if (xml.isAvailable({schemas: true})) {
+											promise = __Internal__.resourcesLoader.locate('./schemas/');
+										};
+										promise = promise.then(function(xsdRoot) {
+											let xsd = null;
+											if (xsdRoot) {
+												xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
+											};
+											return xml.parse(stream, {entities: __Internal__.entities, discardEntities: true, xsd: xsd});
+										}, null, this);
+										return promise
+											.then(function parseXmlPromise(doc) {
+												types.DESTROY(stream);
+		//console.log(require('util').inspect(doc));
+												this.doc = doc;
+											}, null, this);
 									}, null, this);
+							}, this)
+							.then(function(dummy) {
+								this.codeParts = [];
+								return this.parse();
 							}, null, this);
 					},
 
@@ -715,7 +810,7 @@ exports.add = function add(DD_MODULES) {
 										const code = this.toString('', true);
 							//console.log(code);
 										const locals = {root: root};
-										let fn = safeEval.createEval(types.keys(locals))
+										let fn = tools.createEval(types.keys(locals))
 										fn = fn.apply(null, types.values(locals));
 										fn = fn('(function() {' + this.getScriptVariables() + ';\nreturn (' + code + ')})()');
 							//console.log(fn);

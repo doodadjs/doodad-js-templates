@@ -50,11 +50,16 @@
         <xs:element ref="t:script" minOccurs="0" maxOccurs="1" />
       </xs:sequence>
       <xs:attribute name="type" type="xs:string" use="required"/>
-      <xs:attribute name="cache" type="xs:boolean" default="true"/>
-      <xs:attribute name="cacheDuration" type="xs:string"/>
-      <xs:attribute name="defaultIntegrity" type="xs:string"/>
-      <xs:attribute name="doodadPackageUrl" type="xs:string" />
-      <xs:attribute name="bootTemplateUrl" type="xs:string" />
+      <!--<xs:attribute name="cache" type="xs:boolean" form="qualified"/>-->
+      <xs:attribute name="cache" type="xs:boolean" form="unqualified"/>
+      <!--<xs:attribute name="cacheDuration" form="qualified" type="xs:string"/>-->
+      <xs:attribute name="cacheDuration" form="unqualified" type="xs:string"/>
+      <!--<xs:attribute name="defaultIntegrity" form="qualified" type="xs:string"/>-->
+      <xs:attribute name="defaultIntegrity" form="unqualified" type="xs:string"/>
+      <xs:attribute name="doodadPackageUrl" form="qualified" type="xs:string" />
+      <xs:attribute name="doodadPackageUrl" form="unqualified" type="xs:string" />
+      <xs:attribute name="bootTemplateUrl" form="qualified" type="xs:string" />
+      <xs:attribute name="bootTemplateUrl" form="unqualified" type="xs:string" />
     </xs:complexType>
   </xs:element>
 

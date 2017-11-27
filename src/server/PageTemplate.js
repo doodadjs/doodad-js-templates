@@ -79,15 +79,15 @@ exports.add = function add(DD_MODULES) {
 					__compiledAttrs: doodad.PROTECTED(null),
 					__loadDone: doodad.PROTECTED(false),
 						
-					create: doodad.OVERRIDE(function create(request, cacheHandler) {
-						this._super();
+					create: doodad.OVERRIDE(function create(request, cacheHandler, /*optional*/options) {
+						this._super(options);
 							
 						this.__cacheHandler = cacheHandler;
 	
 						const type = types.getType(this);
 
 						const state = request.getHandlerState(cacheHandler);
-						state.defaultDisabled = !types.get(type.$options, 'cache', false);
+						state.noMainFile = !types.get(type.$options, 'cache', false);
 						state.defaultDuration = types.get(type.$options, 'cacheDuration', null);
 
 						_shared.setAttribute(this, 'request', request);
@@ -148,7 +148,7 @@ exports.add = function add(DD_MODULES) {
 									id: id,
 								});
 								types.freezeObject(sectionKey);   // key is complete
-								cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, section: sectionKey});
+								cached = this.__cacheHandler.getCached(this.request, {create: true, section: sectionKey});
 							};
 							if (cached && cached.isValid()) {
 								return this.__cacheHandler.openFile(this.request, cached)
@@ -225,8 +225,9 @@ exports.add = function add(DD_MODULES) {
 						const Promise = types.getPromise();
 
 						if (options || mods) {
-							let doodadUrl = this.request.url.combine(doodadPackageUrl);
-							let bootUrl = this.request.url.combine(bootTemplateUrl);
+							const url = this.request.url.set({file: null});
+							let doodadUrl = url.combine(doodadPackageUrl);
+							let bootUrl = url.combine(bootTemplateUrl);
 
 							if (!root.getOptions().debug) {
 								// TODO: Move "isMinJs" to "Tools.File"
@@ -330,7 +331,7 @@ exports.add = function add(DD_MODULES) {
 								};
 								return handler.createStream(this.request, {url: fullUrl})
 									.then(function(stream) {
-										const getHash = function getHash() {
+										const getHash = function _getHash() {
 											return this.getFileHash(type + ',base64', stream)
 												.then(function(hash) {
 													return (type + '-' + hash);
@@ -348,30 +349,29 @@ exports.add = function add(DD_MODULES) {
 													url: fullUrl.toApiString(),
 												});
 												types.freezeObject(key); // Key is complete
-												cached = this.__cacheHandler.getCached(this.request, {create: true, defaultDisabled: false, key: key});
+												cached = this.__cacheHandler.getCached(this.request, {create: true, key: key, onNew: (root.getOptions().debug ? function(cached) {
+														const path = handler.getSystemPath(this.request, fullUrl);
 
-												if (cached.created && root.getOptions().debug) {
-													const path = handler.getSystemPath(this.request, fullUrl);
+														if (path) {
+															let onUnloadListener = null;
 
-													if (path) {
-														let onUnloadListener = null;
+															cached.addEventListener('validate', function() {
+																if (!onUnloadListener) {
+																	files.watch(path, onUnloadListener = function() {
+																		cached.invalidate();
+																	}, {once: true});
+																};
+															});
 
-														cached.addEventListener('validate', function() {
-															if (!onUnloadListener) {
-																files.watch(path, onUnloadListener = function() {
-																	cached.invalidate();
-																}, {once: true});
-															};
-														});
-
-														cached.addEventListener('invalidate', function() {
-															if (onUnloadListener) {
-																files.unwatch(path, onUnloadListener);
-																onUnloadListener = null;
-															};
-														});
-													};
-												};
+															cached.addEventListener('invalidate', function() {
+																if (onUnloadListener) {
+																	files.unwatch(path, onUnloadListener);
+																	onUnloadListener = null;
+																};
+															});
+														};
+													} : null)}
+												);
 											};
 											if (cached && cached.isValid()) {
 												return this.__cacheHandler.openFile(this.request, cached)
@@ -460,10 +460,11 @@ exports.add = function add(DD_MODULES) {
 					}),
 
 					compileAttr: doodad.OVERRIDE(function asyncCompileAttr(key, value) {
-						if (!this.__compiledAttrs) {
-							this.__compiledAttrs = tools.nullObject();
+						let compiledAttrs = this.__compiledAttrs;
+						if (!compiledAttrs) {
+							this.__compiledAttrs = compiledAttrs = tools.nullObject();
 						};
-						this.__compiledAttrs[key] = function() {
+						compiledAttrs[key] = function() {
 							return value;
 						};
 					}),
