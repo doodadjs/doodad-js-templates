@@ -94,6 +94,10 @@
 
 				const ev = new types.CustomEvent('start');
 				root.dispatchEvent(ev);
+			})
+			.catch(function(err) {
+				console.error(err);
+				throw err;
 			});
 	};
 })();
