@@ -41,20 +41,22 @@ exports.add = function add(DD_MODULES) {
 						throw new types.TypeError("Unknown page template '~0~'.", [name]);
 					};
 
-					/*! INJECT(VAR("ddtVariables")) */
+					{
+						/*! INJECT(VAR("ddtVariables")) */
 
-					return templatesDDTX.REGISTER(type.$extend(
-						{
-							$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
+						return templatesDDTX.REGISTER(type.$extend(
+							{
+								$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
 
-							$options: {
-								cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
-								cacheDuration: /*! INJECT(TO_SOURCE(VAR("cacheDuration"))) */,
-								encoding: /*! INJECT(TO_SOURCE(VAR("encoding"))) */,
-							},
+								$options: {
+									cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
+									cacheDuration: /*! INJECT(TO_SOURCE(VAR("cacheDuration"))) */,
+									encoding: /*! INJECT(TO_SOURCE(VAR("encoding"))) */,
+								},
 
-							renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
-						}));
+								renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
+							}));
+					};
 				});
 			};
 
