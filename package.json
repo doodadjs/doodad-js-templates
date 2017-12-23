@@ -2,6 +2,10 @@
   "name": "doodad-js-templates",
   "description": "doodad-js Templates (alpha)",
   "version": "0.0.0",
+  "config": {
+	"resourcesPath": "./res/",
+	"enableAsyncAwait": false
+  },
   "files": [
 	"tonic.js"
   ],

@@ -58,9 +58,16 @@ exports.add = function add(DD_MODULES) {
 			};
 				
 				
+			//===================================
+			// Options
+			//===================================
+
 			const __options__ = tools.extend({
 				resourcesPath: './res/', // Combined with package's root folder
+				enableAsyncAwait: false, // false = To be compatible with Node.js < v 8
 			}, _options);
+
+			__options__.enableAsyncAwait = types.toBoolean(__options__.enableAsyncAwait);
 
 			types.freezeObject(__options__);
 
@@ -68,8 +75,11 @@ exports.add = function add(DD_MODULES) {
 				return __options__;
 			});
 
-				
-				
+
+			//===================================
+			// Resources
+			//===================================
+
 			// TODO: Make a better and common resources locator and loader
 			__Internal__.resourcesLoader = {
 				locate: function locate(fileName, /*optional*/options) {
@@ -92,6 +102,21 @@ exports.add = function add(DD_MODULES) {
 			});
 
 
+			//===================================
+			// useAsyncAwait flag
+			//===================================
+
+
+			templatesHtml.ADD('useAsyncAwait', (__options__.enableAsyncAwait && types.hasAsyncAwait() ? function useAsyncAwait() {
+				return true;
+			} : function useAsyncAwait() {
+				return false;
+			}));
+
+
+			//===================================
+			// TemplateBase
+			//===================================
 
 			templatesHtml.REGISTER(doodad.BASE(widgets.Widget.$extend(
 				{
@@ -128,7 +153,7 @@ exports.add = function add(DD_MODULES) {
 
 
 			__Internal__.surroundAsync = function surroundAsync(code) {
-				return (types.hasAsyncAwait() ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
+				return (templatesHtml.useAsyncAwait() ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
 			};
 
 			templatesHtml.ADD('DDI', types.CustomEventTarget.$inherit(
@@ -288,7 +313,7 @@ exports.add = function add(DD_MODULES) {
 							};
 							
 							const fnHeader = function _fnHeader() {
-								if (!types.hasAsyncAwait()) {
+								if (!templatesHtml.useAsyncAwait()) {
 									codeParts[codeParts.length] = "let pagePromise = Promise.resolve();";
 								};
 
@@ -314,7 +339,7 @@ exports.add = function add(DD_MODULES) {
 							};
 
 							const startFn = function _startFn(/*optional*/args) {
-								if (types.hasAsyncAwait()) {
+								if (templatesHtml.useAsyncAwait()) {
 									codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
 								} else {
 									codeParts[codeParts.length] = '(function(' + (args || '') + ') {';
@@ -323,7 +348,7 @@ exports.add = function add(DD_MODULES) {
 							};
 
 							const startAsync = function _startAsync(code) {
-								if (types.hasAsyncAwait()) {
+								if (templatesHtml.useAsyncAwait()) {
 									return 'await ' + code;
 								} else {
 									return 'pagePromise = pagePromise.then(function() {return ' + code;
@@ -331,7 +356,7 @@ exports.add = function add(DD_MODULES) {
 							};
 
 							const endAsync = function _endAsync(/*optional*/code) {
-								if (types.hasAsyncAwait()) {
+								if (templatesHtml.useAsyncAwait()) {
 									return (code || '');
 								} else {
 									return (code || '') + '}, null, this);';
@@ -339,7 +364,7 @@ exports.add = function add(DD_MODULES) {
 							};
 
 							const fnFooter = function _fnFooter() {
-								if (!types.hasAsyncAwait()) {
+								if (!templatesHtml.useAsyncAwait()) {
 									codeParts[codeParts.length] = 'return pagePromise;';
 								};
 							};
@@ -746,7 +771,7 @@ exports.add = function add(DD_MODULES) {
 									code += '\n' + newLevel + part;
 								};
 							};
-							return level + (types.hasAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' + 
+							return level + (templatesHtml.useAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' + 
 										'\n' + newLevel +
 										(writeHeader && this.getScriptHeader() || '') +
 										'\n' + code +
