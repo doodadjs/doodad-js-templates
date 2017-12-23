@@ -293,24 +293,24 @@ exports.add = function add(DD_MODULES) {
 								};
 
 								// Expressions
-								codeParts[codeParts.length] = "const evalExpr = (function() {";
-									codeParts[codeParts.length] = "let evalFn = null;";
-									codeParts[codeParts.length] = "return function(expr, refresh) {";
-										codeParts[codeParts.length] = "if (refresh) {";
-											codeParts[codeParts.length] = "evalFn = null;";
-										codeParts[codeParts.length] = "};";
-										codeParts[codeParts.length] = "let fn = evalFn;";
-										codeParts[codeParts.length] = "if (!evalFn) {";
-											codeParts[codeParts.length] = "const variables = tools.nullObject(page.options.variables);";
-											codeParts[codeParts.length] = "fn = " + tools.generateCreateEval() + "(types.keys(variables)).apply(null, types.values(variables));";
-										codeParts[codeParts.length] = "};";
-										codeParts[codeParts.length] = "const result = (expr ? fn(expr) : undefined);";
-										codeParts[codeParts.length] = "if (!evalFn && !refresh) {";
-											codeParts[codeParts.length] = "evalFn = fn;";
-										codeParts[codeParts.length] = "};";
-										codeParts[codeParts.length] = "return result;";
-									codeParts[codeParts.length] = "};";
-								codeParts[codeParts.length] = "})();";
+								codeParts[codeParts.length] = "const evalExpr = (function() {" +
+									"let evalFn = null;" +
+									"return function(expr, refresh) {" +
+										"if (refresh) {" +
+											"evalFn = null;" +
+										"};" +
+										"let fn = evalFn;" +
+										"if (!evalFn) {" +
+											"const variables = tools.nullObject(page.options.variables);" +
+											"fn = " + tools.generateCreateEval() + "(types.keys(variables)).apply(null, types.values(variables));" +
+										"};" +
+										"const result = (expr ? fn(expr) : undefined);" +
+										"if (!evalFn && !refresh) {" +
+											"evalFn = fn;" +
+										"};" +
+										"return result;" +
+									"};" +
+								"})();";
 							};
 
 							const startFn = function _startFn(/*optional*/args) {
