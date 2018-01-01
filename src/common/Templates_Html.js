@@ -829,7 +829,7 @@ exports.add = function add(DD_MODULES) {
 									}, this)
 									.then(function(type) {
 										if (!types._implements(type, templatesHtml.PageTemplate)) {
-											throw new types.TypeError("Unknown page template '~0~'.", [name]);
+											throw new types.ValueError("Unknown page template '~0~'.", [name]);
 										};
 								
 										const code = this.toString('', true);
