@@ -66,7 +66,7 @@
 
 					toLoad.push(
 						{
-							module: 'doodad-js-safeeval',
+							module: '@doodad-js/safeeval',
 						},
 					);
 

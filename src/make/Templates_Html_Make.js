@@ -30,14 +30,14 @@ exports.add = function add(DD_MODULES) {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 		dependencies: [
 			{
-				name: 'doodad-js-make',
-				version: /*! REPLACE_BY(TO_SOURCE(VERSION('doodad-js-make'))) */ null /*! END_REPLACE() */,
-				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "doodad-js-make"))) */ 'Package' /*! END_REPLACE()*/,
+				name: '@doodad-js/make',
+				version: /*! REPLACE_BY(TO_SOURCE(VERSION('@doodad-js/make'))) */ null /*! END_REPLACE() */,
+				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "@doodad-js/make"))) */ 'Package' /*! END_REPLACE()*/,
 			},
 			{
-				name: 'doodad-js-templates',
-				version: /*! REPLACE_BY(TO_SOURCE(VERSION('doodad-js-templates'))) */ null /*! END_REPLACE() */,
-				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "doodad-js-templates"))) */ 'Package' /*! END_REPLACE()*/,
+				name: '@doodad-js/templates',
+				version: /*! REPLACE_BY(TO_SOURCE(VERSION('@doodad-js/templates'))) */ null /*! END_REPLACE() */,
+				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "@doodad-js/templates"))) */ 'Package' /*! END_REPLACE()*/,
 			},
 		],
 			
@@ -112,7 +112,7 @@ exports.add = function add(DD_MODULES) {
 
 							return {
 								'class': file.Javascript,
-								source: '~doodad-js-templates/src/make/res/ddtx.templ.js',
+								source: '~@doodad-js/templates/src/make/res/ddtx.templ.js',
 								destination: dest,
 								runDirectives: true,
 								variables: variables,

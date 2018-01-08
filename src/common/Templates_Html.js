@@ -238,8 +238,8 @@ exports.add = function add(DD_MODULES) {
 							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
 							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
 
-							const DEFAULT_DOODAD_PKG_URL = '?res=doodad-js/doodad-js.min.js';
-							const DEFAULT_BOOT_TEMPL_URL = '?res=doodad-js-templates/Boot.min.js';
+							const DEFAULT_DOODAD_PKG_URL = '?res=@doodad-js/core/package.min.js';
+							const DEFAULT_BOOT_TEMPL_URL = '?res=@doodad-js/templates/Boot.min.js';
 
 							const RESERVED_OBJ_PROPS = ['__proto__', 'toString', 'toValue', 'toJSON', 'toSource'];
 							
@@ -564,7 +564,7 @@ exports.add = function add(DD_MODULES) {
 												let addCharset = false,
 													addModules = false;
 												if (name === 'head') {
-													// TODO: Replace by an XPATH search when they will be available in doodad-js-xml.
+													// TODO: Replace by an XPATH search when they will be available in @doodad-js/xml.
 													const metaNodes = child.getChildren().find('meta');
 													const len = metaNodes.length;
 													addCharset = true;
@@ -677,7 +677,7 @@ exports.add = function add(DD_MODULES) {
 							fnHeader();
 
 							if (this.type === 'ddt') {
-								// TODO: Replace by XPATH search when it will be available in doodad-js-xml.
+								// TODO: Replace by XPATH search when it will be available in @doodad-js/xml.
 								const doctypeNodes = ddi.getChildren().find('doctype')
 									.filter(function(doctypeNode) {
 										return doctypeNode.getBaseURI() === DDT_URI;
@@ -818,10 +818,7 @@ exports.add = function add(DD_MODULES) {
 														path: this.path.set({extension: (root.getOptions().fromSource ? 'js' : 'min.js')}),
 													},
 												], {startup: {secret: _shared.SECRET}})
-												.nodeify(function(err, dummy) {
-													if (err) {
-														return type;
-													};
+												.then(function(dummy) {
 													return namespaces.get(name);
 												});
 										};

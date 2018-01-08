@@ -27,31 +27,31 @@
   "stage": "a",
   "dependencies": [
     {
-      "name": "doodad-js",
+      "name": "@doodad-js/core",
       "client": true,
       "server": true,
       "browserify": true
     },
     {
-      "name": "doodad-js-io",
+      "name": "@doodad-js/io",
       "client": true,
       "server": true,
       "browserify": true
     },
     {
-      "name": "doodad-js-widgets",
+      "name": "@doodad-js/widgets",
       "client": true,
       "server": true,
       "browserify": true
     },
     {
-      "name": "doodad-js-xml",
+      "name": "@doodad-js/xml",
       "client": true,
       "server": true,
       "browserify": true
     },
     {
-      "name": "doodad-js-safeeval",
+      "name": "@doodad-js/safeeval",
       "client": true,
       "server": true,
       "browserify": true
