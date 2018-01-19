@@ -51,18 +51,17 @@ exports.add = function add(DD_MODULES) {
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
-				nodejs = doodad.NodeJs,
-				files = tools.Files,
+				//nodejs = doodad.NodeJs,
+				//files = tools.Files,
 				make = root.Make,
 				file = make.File,
-				io = doodad.IO,
-				minifiers = io.Minifiers,
+				//io = doodad.IO,
+				//minifiers = io.Minifiers,
 				templates = doodad.Templates,
 				templatesHtml = templates.Html,
 				templatesHtmlMake = templatesHtml.Make,
-				xml = tools.Xml,
+				xml = tools.Xml;
 					
-				nodeFs = require('fs');
 
 			//===================================
 			// Natives
@@ -84,7 +83,7 @@ exports.add = function add(DD_MODULES) {
 				$TYPE_NAME: 'Compile',
 
 				execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
-					const Promise = types.getPromise();
+					//const Promise = types.getPromise();
 
 					const source = this.taskData.parseVariables(item.source, { isPath: true });
 					const dest = this.taskData.parseVariables(item.destination, { isPath: true });

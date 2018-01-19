@@ -40,7 +40,7 @@ exports.add = function add(DD_MODULES) {
 				types = doodad.Types,
 				tools = doodad.Tools,
 				widgets = doodad.Widgets,
-				safeEval = tools.SafeEval,
+				//safeEval = tools.SafeEval,
 				namespaces = doodad.Namespaces,
 				modules = doodad.Modules,
 				files = tools.Files,
@@ -85,7 +85,7 @@ exports.add = function add(DD_MODULES) {
 				locate: function locate(fileName, /*optional*/options) {
 					const Promise = types.getPromise();
 					return Promise.try(function tryLocate() {
-						const path = tools.getCurrentScript((global.document?document.currentScript:module.filename)||(function(){try{throw new Error("");}catch(ex){return ex;}})())
+						const path = tools.getCurrentScript((global.document ? document.currentScript : module.filename) || (function() { try{ throw new Error(""); }catch(ex) { return ex; } })())
 							.set({file: null})
 							.combine(files.parsePath(__options__.resourcesPath), {includePathInRoot: true})
 							.combine(files.parsePath(fileName));
@@ -151,7 +151,6 @@ exports.add = function add(DD_MODULES) {
 				})));
 
 
-
 			__Internal__.surroundAsync = function surroundAsync(code) {
 				return (templatesHtml.useAsyncAwait() ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
 			};
@@ -207,6 +206,7 @@ exports.add = function add(DD_MODULES) {
 					cacheDuration: null,
 						
 					getScriptVariables: function getScriptVariables() {
+						/* eslint-disable */
 						return (function() {
 							const types = root.Doodad.Types;
 							const tools = root.Doodad.Tools;
@@ -216,6 +216,7 @@ exports.add = function add(DD_MODULES) {
 					},
 						
 					getScriptHeader: function getScriptHeader() {
+						/* eslint-disable */
 						// NOTE: Returns the header of the "renderTemplate" function
 						return (function() {
 							// Gives 'page' object everywhere in "renderTemplate" to avoid using 'this' which is less descriptive.
@@ -224,6 +225,7 @@ exports.add = function add(DD_MODULES) {
 					},
 						
 					getScriptFooter: function getScriptFooter() {
+						/* eslint-disable */
 						// NOTE: Returns the footer of the "renderTemplate" function
 						//return (function() {
 						//}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
@@ -231,12 +233,14 @@ exports.add = function add(DD_MODULES) {
 					},
 						
 					parse: function parse() {
+						/* eslint no-useless-concat: "off" */
+
 						const Promise = types.getPromise();
 
 						return Promise.try(function() {
-							const DDI_URI = "http://www.doodad-js.local/schemas/ddi"
-							const DDT_URI = "http://www.doodad-js.local/schemas/ddt"
-							const HTML_URI = "http://www.doodad-js.local/schemas/html5"
+							const DDI_URI = "http://www.doodad-js.local/schemas/ddi";
+							const DDT_URI = "http://www.doodad-js.local/schemas/ddt";
+							const HTML_URI = "http://www.doodad-js.local/schemas/html5";
 
 							const DEFAULT_DOODAD_PKG_URL = '?res=@doodad-js/core/package.min.js';
 							const DEFAULT_BOOT_TEMPL_URL = '?res=@doodad-js/templates/Boot.min.js';
@@ -441,7 +445,7 @@ exports.add = function add(DD_MODULES) {
 														codeParts[codeParts.length] = startAsync('page.asyncScript(');
 														startFn();
 													};
-													codeParts[codeParts.len+gth] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
+													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
 												};
 												codeParts[codeParts.length] = 'if (!__expr__) {';
 												const newState = tools.extend(state, {isHtml: false, isIf: false});
@@ -462,7 +466,7 @@ exports.add = function add(DD_MODULES) {
 													writeHTML(newState);
 													writeAsyncWrites(newState);
 												} else if (!state.isModules && (name === 'script')) {
-													const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) {return !!v});
+													const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) { return !!v; });
 													if (vars.length) {
 														codeParts[codeParts.length] = ('var ' + vars.join(' = null, ') + ' = null;');
 													};
@@ -605,7 +609,7 @@ exports.add = function add(DD_MODULES) {
 												} else {
 													writeHTML(state);
 													writeAsyncWrites(state);
-													let integrityValue = defaultIntegrity[1];
+													const integrityValue = defaultIntegrity[1];
 													attrs.forEach(function forEachAttr(attr) {
 														const key = attr.getName();
 														if (ignoreAttrs.indexOf(key) < 0) {
@@ -626,7 +630,7 @@ exports.add = function add(DD_MODULES) {
 												const children = child.getChildren();
 												// <PRB> Browsers do not well support "<name />"
 												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'track'], name) < 0);
-												let hasChildren = addCharset || !!children.getCount() || mandatoryContent;
+												const hasChildren = addCharset || !!children.getCount() || mandatoryContent;
 												if (hasChildren) {
 													state.html += '>';
 													if (addCharset) {
@@ -649,7 +653,7 @@ exports.add = function add(DD_MODULES) {
 									} else if (state.isHtml && types._instanceof(child, xml.Text)) {
 										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
 									} else if (state.isHtml && types._instanceof(child, xml.CDATASection)) {
-										state.html += '<![CDATA[' + child.getValue().replace(/\]\]\>/g, "]]]]><![CDATA[>") + ']]>';
+										state.html += '<![CDATA[' + child.getValue().replace(/\]\]>/g, "]]]]><![CDATA[>") + ']]>';
 									};
 								}, this);
 
@@ -720,7 +724,7 @@ exports.add = function add(DD_MODULES) {
 						return Promise.try(function() {
 								if (this.doc) {
 									// Already opened.
-									return;
+									return undefined;
 								};
 								const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
 								return files.openFile(this.path, {encoding: encoding})
@@ -832,7 +836,7 @@ exports.add = function add(DD_MODULES) {
 										const code = this.toString('', true);
 							//console.log(code);
 										const locals = {root: root};
-										let fn = tools.createEval(types.keys(locals))
+										let fn = tools.createEval(types.keys(locals));
 										fn = fn.apply(null, types.values(locals));
 										fn = fn('(function() {' + this.getScriptVariables() + ';\nreturn (' + code + ')})()');
 							//console.log(fn);
@@ -932,8 +936,7 @@ exports.add = function add(DD_MODULES) {
 							delete __Internal__.ddtxCache[key];
 							throw err;
 						} else {
-							let listener;
-							ddtx.$onUnload.attachOnce(null, listener = function(ev) {
+							ddtx.$onUnload.attachOnce(null, function(ev) {
 								delete __Internal__.ddtxCache[key];
 							});
 							__Internal__.ddtxCache[key] = ddtx;

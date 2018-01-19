@@ -47,23 +47,22 @@ exports.add = function add(DD_MODULES) {
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
-				modules = doodad.Modules,
-				namespaces = doodad.Namespaces,
+				//modules = doodad.Modules,
+				//namespaces = doodad.Namespaces,
 				templates = doodad.Templates,
 				templatesHtml = templates.Html,
 				io = doodad.IO,
 				ioMixIns = io.MixIns,
-				ioInterfaces = io.Interfaces,
-				nodeJs = doodad.NodeJs,
-				nodeJsIO = nodeJs.IO,
-				nodejsIOInterfaces = nodeJsIO.Interfaces,
-				safeEval = tools.SafeEval,
+				//ioInterfaces = io.Interfaces,
+				//nodeJs = doodad.NodeJs,
+				//nodeJsIO = nodeJs.IO,
+				//nodejsIOInterfaces = nodeJsIO.Interfaces,
+				//safeEval = tools.SafeEval,
 				files = tools.Files;
 				
 				
 			//const __Internal__ = {
 			//};
-				
 
 				
 			templatesHtml.REGISTER(doodad.BASE(templatesHtml.TemplateBase.$extend(
@@ -113,12 +112,14 @@ exports.add = function add(DD_MODULES) {
 									if (this.__cacheStream) {
 										return this.__cacheStream.writeAsync(buffer);
 									};
+									return undefined;
 								}, null, this);
 								//.catch(function(err) {
 								//	types.DEBUGGER();
 								//});
 						};
 						this.overrideSuper();
+						return undefined;
 					}),
 						
 					asyncForEach: doodad.OVERRIDE(function asyncForEach(items, fn) {
@@ -182,11 +183,13 @@ exports.add = function add(DD_MODULES) {
 																	cacheStream.write(io.EOF);
 																	return cacheStream.flushAsync({purge: true});
 																};
+																return undefined;
 															});
 													} else {
 														return cacheStream.writeAsync(io.EOF);
 													};
 												};
+												return undefined;
 											}, null, this)
 											.then(function outputOnEOF(ev) {
 												cached.validate();
@@ -280,6 +283,8 @@ exports.add = function add(DD_MODULES) {
 										}, null, this);
 								}, null, this);
 						};
+
+						return undefined;
 					}),
 
 					getFileHash: doodad.PROTECTED(doodad.ASYNC(function getFileHash(type, fileStream) {
@@ -349,28 +354,32 @@ exports.add = function add(DD_MODULES) {
 													url: fullUrl.toApiString(),
 												});
 												types.freezeObject(key); // Key is complete
-												cached = this.__cacheHandler.getCached(this.request, {create: true, key: key, onNew: (root.getOptions().debug ? function(cached) {
-														const path = handler.getSystemPath(this.request, fullUrl);
+												cached = this.__cacheHandler.getCached(this.request, {
+														create: true,
+														key: key,
+														onNew: (root.getOptions().debug ? function(cached) {
+															const path = handler.getSystemPath(this.request, fullUrl);
 
-														if (path) {
-															let onUnloadListener = null;
+															if (path) {
+																let onUnloadListener = null;
 
-															cached.addEventListener('validate', function() {
-																if (!onUnloadListener) {
-																	files.watch(path, onUnloadListener = function() {
-																		cached.invalidate();
-																	}, {once: true});
-																};
-															});
+																cached.addEventListener('validate', function() {
+																	if (!onUnloadListener) {
+																		files.watch(path, onUnloadListener = function() {
+																			cached.invalidate();
+																		}, {once: true});
+																	};
+																});
 
-															cached.addEventListener('invalidate', function() {
-																if (onUnloadListener) {
-																	files.unwatch(path, onUnloadListener);
-																	onUnloadListener = null;
-																};
-															});
-														};
-													} : null)}
+																cached.addEventListener('invalidate', function() {
+																	if (onUnloadListener) {
+																		files.unwatch(path, onUnloadListener);
+																		onUnloadListener = null;
+																	};
+																});
+															};
+														} : null)
+													}
 												);
 											};
 											if (cached && cached.isValid()) {
@@ -410,11 +419,13 @@ exports.add = function add(DD_MODULES) {
 																								cacheStream.write(io.EOF);
 																								return cacheStream.flushAsync({purge: true});
 																							};
+																							return undefined;
 																						});
 																				} else {
 																					return cacheStream.writeAsync(io.EOF);
 																				};
 																			};
+																			return undefined;
 																		}, null, this)
 																		.then(function() {
 																			cached.validate();
