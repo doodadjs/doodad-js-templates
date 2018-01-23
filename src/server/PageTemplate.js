@@ -27,6 +27,8 @@
 //! IF_SET("mjs")
 	//! INJECT("import {default as nodeCrypto} from 'crypto';");
 //! ELSE()
+	"use strict";
+
 	const nodeCrypto = require('crypto');
 //! END_IF()
 
@@ -38,8 +40,6 @@ exports.add = function add(DD_MODULES) {
 	DD_MODULES['Doodad.Templates.Html/PageTemplate'] = {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 		create: function create(root, /*optional*/_options, _shared) {
-			"use strict";
-				
 			//===================================
 			// Get namespaces
 			//===================================
