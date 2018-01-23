@@ -24,14 +24,17 @@
 //	limitations under the License.
 //! END_REPLACE()
 
+//! IF_SET("mjs")
+//! ELSE()
+	"use strict";
+//! END_IF()
+
 exports.add = function add(DD_MODULES) {
 	DD_MODULES = (DD_MODULES || {});
 	DD_MODULES['Doodad.Templates.Html'] = {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 		namespaces: ['DDTX'],
 		create: function create(root, /*optional*/_options, _shared) {
-			"use strict";
-				
 			//===================================
 			// Get namespaces
 			//===================================
@@ -225,7 +228,6 @@ exports.add = function add(DD_MODULES) {
 					},
 						
 					getScriptFooter: function getScriptFooter() {
-						/* eslint-disable */
 						// NOTE: Returns the footer of the "renderTemplate" function
 						//return (function() {
 						//}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
