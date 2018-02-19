@@ -48,7 +48,7 @@ exports.add = function add(DD_MODULES) {
 				types = doodad.Types,
 				tools = doodad.Tools,
 				//modules = doodad.Modules,
-				//namespaces = doodad.Namespaces,
+				namespaces = doodad.Namespaces,
 				templates = doodad.Templates,
 				templatesHtml = templates.Html,
 				io = doodad.IO,
@@ -250,28 +250,32 @@ exports.add = function add(DD_MODULES) {
 							};
 
 							return this.request.resolve(doodadUrl, 'Doodad.Server.Http.StaticPage')
-								.then(function(doodadHandler) {
-									if (!doodadHandler) {
+								.then(function(doodadResult) {
+									if (!doodadResult) {
 										throw new types.Error("Can't resolve resource at '~0~'.", [doodadUrl.toApiString()]);
 									};
 
+									const doodadResolved = doodadResult[0];
+									const doodadHandler = doodadResolved.handler;
 									//const doodadState = this.request.getHandlerState(doodadHandler);
 
 									return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptPage')
-										.then(function(bootHandler) {
-											if (!bootHandler) {
+										.then(function(bootResult) {
+											if (!bootResult) {
 												throw new types.Error("Can't resolve resource at '~0~'.", [bootUrl.toApiString()]);
 											};
 
+											const bootResolved = bootResult[0];
+											const bootHandler = bootResolved.handler;
 											//const bootState = this.request.getHandlerState(bootHandler);
 
 											return bootHandler.setJsVars(this.request, {options: options || null, modules: (mods && mods.length > 0 ? mods : null), startups: null})
 												.then(function(varsId) {
-													const bootUrlVars = bootUrl.setArgs({vars: varsId});
+													const bootUrlVars = bootResolved.url.setArgs({vars: varsId});
 
-													return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadUrl) : Promise.resolve(null))
+													return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadResolved.url) : Promise.resolve(null))
 														.then(function(integrity) {
-															return this.writeAsync('<script async src="' + doodadUrl.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
+															return this.writeAsync('<script async src="' + doodadResolved.url.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
 														}, null, this)
 														.then(function(dummy) {
 															return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, bootUrlVars) : Promise.resolve(null))
@@ -330,11 +334,12 @@ exports.add = function add(DD_MODULES) {
 						const fullUrl = this.request.url.set({file: null}).combine(url);
 
 						return this.request.resolve(fullUrl, 'Doodad.Server.Http.StaticPage')
-							.then(function(handler) {
-								if (!handler) {
+							.then(function(result) {
+								if (!result) {
 									throw new types.Error("Can't resolve URL '~0~'.", [url]);
 								};
-								return handler.createStream(this.request, {url: fullUrl})
+								const resolved = result[0];
+								return resolved.handler.createStream(this.request, {url: resolved.url})
 									.then(function(stream) {
 										const getHash = function _getHash() {
 											return this.getFileHash(type + ',base64', stream)
@@ -351,14 +356,15 @@ exports.add = function add(DD_MODULES) {
 											if (this.__cacheHandler) {
 												const key = this.__cacheHandler.createKey({
 													hash: type,
-													url: fullUrl.toApiString(),
+													url: resolved.url.toApiString(),
 												});
 												types.freezeObject(key); // Key is complete
+												const FileSystemPage = root.getOptions().debug && namespaces.get('Doodad.NodeJs.Server.Http.FileSystemPage');
 												cached = this.__cacheHandler.getCached(this.request, {
 														create: true,
 														key: key,
-														onNew: (root.getOptions().debug ? function(cached) {
-															const path = handler.getSystemPath(this.request, fullUrl);
+														onNew: (FileSystemPage && types.isLike(resolved.handler, FileSystemPage) ? function(cached) {
+															const path = resolved.handler.getSystemPath(this.request, resolved.url);
 
 															if (path) {
 																let onUnloadListener = null;
