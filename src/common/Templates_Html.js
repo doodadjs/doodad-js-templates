@@ -859,7 +859,7 @@ exports.add = function add(DD_MODULES) {
 										let listener;
 										this.addEventListener('unload', listener = function(ev) {
 											this.removeEventListener('unload', listener);
-											_shared.invoke(templ, '$onUnload', null, _shared.SECRET);
+											types.invoke(templ, '$onUnload', null, _shared.SECRET);
 											templatesDDTX.UNREGISTER(templ);
 											types.DESTROY(templ);
 										});
