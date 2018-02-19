@@ -256,7 +256,7 @@ exports.add = function add(DD_MODULES) {
 									};
 
 									const doodadResolved = doodadResult[0];
-									const doodadHandler = doodadResolved.handler;
+									//const doodadHandler = doodadResolved.handler;
 									//const doodadState = this.request.getHandlerState(doodadHandler);
 
 									return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptPage')
