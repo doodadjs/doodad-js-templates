@@ -89,7 +89,7 @@ exports.add = function add(DD_MODULES) {
 						state.noMainFile = !types.get(type.$options, 'cache', false);
 						state.defaultDuration = types.get(type.$options, 'cacheDuration', null);
 
-						_shared.setAttribute(this, 'request', request);
+						types.setAttribute(this, 'request', request);
 					}),
 						
 					render: doodad.OVERRIDE(function render() {
