@@ -259,7 +259,7 @@ exports.add = function add(DD_MODULES) {
 									//const doodadHandler = doodadResolved.handler;
 									//const doodadState = this.request.getHandlerState(doodadHandler);
 
-									return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptPage')
+									return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptFileSystemPage')
 										.then(function(bootResult) {
 											if (!bootResult) {
 												throw new types.Error("Can't resolve resource at '~0~'.", [bootUrl.toApiString()]);
