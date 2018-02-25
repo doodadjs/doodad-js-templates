@@ -79,8 +79,9 @@ exports.add = function add(DD_MODULES) {
 			// Internal
 			//===================================
 					
-			//const __Internal__ = {
-			//};
+			const __Internal__ = {
+				xsdWarned: false,
+			};
 				
 				
 			templatesHtmlMake.REGISTER(make.Operation.$extend(
@@ -93,10 +94,11 @@ exports.add = function add(DD_MODULES) {
 					const source = this.taskData.parseVariables(item.source, { isPath: true });
 					const dest = this.taskData.parseVariables(item.destination, { isPath: true });
 
-					console.info(tools.format("Compiling template '~0~' to '~1~'...", [source, dest]));
+					tools.log(tools.LogLevels.Info, "Compiling template '~0~' to '~1~'...", [source, dest]);
 
-					if (!xml.isAvailable({schemas: true})) {
-						console.warn("*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
+					if (!__Internal__.xsdWarned && !xml.isAvailable({schemas: true})) {
+						__Internal__.xsdWarned = true;
+						tools.log(tools.LogLevels.Warning, "*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
 					};
 
 					const ddt = templatesHtml.DDT.$get(source, options);
