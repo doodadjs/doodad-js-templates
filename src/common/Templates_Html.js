@@ -33,6 +33,12 @@ exports.add = function add(DD_MODULES) {
 	DD_MODULES = (DD_MODULES || {});
 	DD_MODULES['Doodad.Templates.Html'] = {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
+		dependencies: [
+			{
+				name: 'Doodad.Templates.Html/Resources',
+				optional: true,
+			},
+		],
 		namespaces: ['DDTX'],
 		create: function create(root, /*optional*/_options, _shared) {
 			//===================================
@@ -42,12 +48,14 @@ exports.add = function add(DD_MODULES) {
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
+				html = tools.Html,
 				widgets = doodad.Widgets,
 				//safeEval = tools.SafeEval,
 				namespaces = doodad.Namespaces,
 				modules = doodad.Modules,
+				resources = doodad.Resources,
 				files = tools.Files,
-				config = tools.Config,
+				//config = tools.Config,
 				xml = tools.Xml,
 				templates = doodad.Templates,
 				templatesHtml = templates.Html,
@@ -55,7 +63,6 @@ exports.add = function add(DD_MODULES) {
 				
 				
 			const __Internal__ = {
-				entities: null,
 				templatesCached: tools.nullObject(),
 				ddtxCache: tools.nullObject(),
 			};
@@ -66,7 +73,6 @@ exports.add = function add(DD_MODULES) {
 			//===================================
 
 			const __options__ = tools.extend({
-				resourcesPath: './res/', // Combined with package's root folder
 				enableAsyncAwait: false, // false = To be compatible with Node.js < v 8
 			}, _options);
 
@@ -76,32 +82,6 @@ exports.add = function add(DD_MODULES) {
 
 			templatesHtml.ADD('getOptions', function getOptions() {
 				return __options__;
-			});
-
-
-			//===================================
-			// Resources
-			//===================================
-
-			// TODO: Make a better and common resources locator and loader
-			__Internal__.resourcesLoader = {
-				locate: function locate(fileName, /*optional*/options) {
-					const Promise = types.getPromise();
-					return Promise.try(function tryLocate() {
-						const path = tools.getCurrentScript((global.document ? document.currentScript : module.filename) || (function() { try{ throw new Error(""); }catch(ex) { return ex; } })())
-							.set({file: null})
-							.combine(files.parsePath(__options__.resourcesPath), {includePathInRoot: true})
-							.combine(files.parsePath(fileName));
-						return path;
-					});
-				},
-				load: function load(path, /*optional*/options) {
-					return config.load(path, { async: true, watch: true, encoding: 'utf-8' }, types.get(options, 'callback'));
-				},
-			};
-				
-			templatesHtml.ADD('setResourcesLoader', function setResourcesLoader(loader) {
-				__Internal__.resourcesLoader = loader;
 			});
 
 
@@ -214,7 +194,6 @@ exports.add = function add(DD_MODULES) {
 							const types = root.Doodad.Types;
 							const tools = root.Doodad.Tools;
 							const Promise = types.getPromise();
-							const escapeHtml = tools.escapeHtml;
 						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 					},
 						
@@ -483,7 +462,7 @@ exports.add = function add(DD_MODULES) {
 													endFn();
 													codeParts[codeParts.length] = endAsync(');');
 												} else if (!state.isModules && (name === 'eval')) {
-													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(escapeHtml(' + prepareExpr(child.getChildren().getAt(0).getValue()) + ' + ""))});'); // CDATA or Text
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(tools.escapeHtml(' + prepareExpr(child.getChildren().getAt(0).getValue()) + ' + "", true))});'); // CDATA or Text
 												} else if (!state.isModules && (name === 'variable')) {
 													const name = child.getAttr('name'); // required
 													const expr = child.getAttr('expr'); // required
@@ -605,7 +584,7 @@ exports.add = function add(DD_MODULES) {
 														const key = attr.getName();
 														if (ignoreAttrs.indexOf(key) < 0) {
 															const value = attr.getValue();
-															state.html += ' ' + tools.escapeHtml(key) + '="' + tools.escapeHtml(value) + '"';
+															state.html += ' ' + tools.escapeHtml(key, true) + '="' + tools.escapeHtml(value, false) + '"';
 														};
 													}, this);
 												} else {
@@ -653,7 +632,7 @@ exports.add = function add(DD_MODULES) {
 											};
 										};
 									} else if (state.isHtml && types._instanceof(child, xml.Text)) {
-										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '));
+										state.html += tools.escapeHtml(child.getValue().replace(/\r|\n|\t/g, ' ').replace(/[ ]+/g, ' '), true);
 									} else if (state.isHtml && types._instanceof(child, xml.CDATASection)) {
 										state.html += '<![CDATA[' + child.getValue().replace(/\]\]>/g, "]]]]><![CDATA[>") + ']]>';
 									};
@@ -732,15 +711,16 @@ exports.add = function add(DD_MODULES) {
 								return files.openFile(this.path, {encoding: encoding})
 									.then(function openFilePromise(stream) {
 										let promise = Promise.resolve(null);
+										const loader = templatesHtml.getResourcesLoader();
 										if (xml.isAvailable({schemas: true})) {
-											promise = __Internal__.resourcesLoader.locate('./schemas/');
+											promise = loader.locate('./common/res/schemas/');
 										};
 										promise = promise.then(function(xsdRoot) {
 											let xsd = null;
 											if (xsdRoot) {
 												xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
 											};
-											return xml.parse(stream, {entities: __Internal__.entities, discardEntities: true, xsd: xsd});
+											return xml.parse(stream, {entities: html.getEntities(), discardEntities: true, xsd: xsd});
 										}, null, this);
 										return promise
 											.then(function parseXmlPromise(doc) {
@@ -948,24 +928,15 @@ exports.add = function add(DD_MODULES) {
 				});
 			});
 
+			return modules.locate('@doodad-js/templates')
+				.then(function(path) {
+					const basePath = path.set({file: null});
+					const rootOpts = root.getOptions();
+					resources.createResourcesLoader(templatesHtml, (rootOpts.fromSource ? basePath.combine('./src') : (root.serverSide ? basePath.combine('./build') : basePath)));
 
-			//===================================
-			// Init
-			//===================================
-			return function init(/*optional*/options) {
-				return __Internal__.resourcesLoader.locate('./schemas/html5/entities.json')
-					.then(function loadXmlEntitiesPromise(location) {
-						return __Internal__.resourcesLoader.load(location, {callback: function parseXmlEntritiesCallback(err, entities) {
-							if (!err) {
-								entities = tools.reduce(entities, function(newEntities, value, name) {
-									newEntities[name.replace(/[&;]/g, '')] = value.characters;
-									return newEntities;
-								}, {});
-								__Internal__.entities = entities;
-							};
-						}});
-					});
-			};
+					//return function init(_options) {
+					//};
+				});
 		},
 	};
 	return DD_MODULES;

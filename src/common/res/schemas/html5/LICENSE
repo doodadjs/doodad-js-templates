@@ -1,7 +1,6 @@
 FILES
 =================
 common_html5.xsd   : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
-entities.json      : Copyright W3C. http://www.w3.org/TR/html5-author/entities.json. Contains some additional entities to XHTML 1.
 html5.dtd          : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 entities DTD, no element.
 html5.xsd          : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.
 html5_base.xsd     : Copyright Claude Petit 2015, under the Apache V2 license. HTML5 elements schema, no attribute.

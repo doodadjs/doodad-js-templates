@@ -73,15 +73,16 @@
   ],
   "resources": [
     {
-      "src": "server/res",
       "namespace": null,
+      "src": "server/res",
       "client": false,
       "server": true,
       "browserify": false
     },
     {
-      "src": "common/res",
+	  "name": "Doodad.Templates.Html/Resources",
       "namespace": "Doodad.Templates.Html",
+      "src": "common/res",
       "client": true,
       "server": true,
       "browserify": true

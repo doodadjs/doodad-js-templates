@@ -499,7 +499,7 @@ exports.add = function add(DD_MODULES) {
 								.then(function(value) {
 									const name = entry[0];
 									compiledAttrs[name] = value;
-									return this.writeAsync(' ' + tools.escapeHtml(types.toString(name)) + '="' + tools.escapeHtml(types.toString(value)) + '"');
+									return this.writeAsync(' ' + tools.escapeHtml(types.toString(name), true) + '="' + tools.escapeHtml(types.toString(value), false) + '"');
 								}, null, this);
 						}, {thisObj: this});
 						//.catch(err => {console.error(err); throw err});
