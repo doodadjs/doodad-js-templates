@@ -35,9 +35,9 @@
 const nodeCryptoCreateHash = nodeCrypto.createHash;
 
 
-exports.add = function add(DD_MODULES) {
-	DD_MODULES = (DD_MODULES || {});
-	DD_MODULES['Doodad.Templates.Html/PageTemplate'] = {
+exports.add = function add(modules) {
+	modules = (modules || {});
+	modules['Doodad.Templates.Html/PageTemplate'] = {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 		create: function create(root, /*optional*/_options, _shared) {
 			//===================================
@@ -514,7 +514,7 @@ exports.add = function add(DD_MODULES) {
 			//};
 		},
 	};
-	return DD_MODULES;
+	return modules;
 };
 
 //! END_MODULE()
