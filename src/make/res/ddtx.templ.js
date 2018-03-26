@@ -1,8 +1,8 @@
 //! BEGIN_MODULE()
 
-exports.add = function add(DD_MODULES) {
-	DD_MODULES = (DD_MODULES || {});
-	DD_MODULES[/*! INJECT(TO_SOURCE("Doodad.Templates.Html.DDTX/" + VAR("ddtType"))) */] = {
+exports.add = function add(modules) {
+	modules = (modules || {});
+	modules[/*! INJECT(TO_SOURCE("Doodad.Templates.Html.DDTX/" + VAR("ddtType"))) */] = {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
 		create: function create(root, /*optional*/_options, _shared) {
 			"use strict";
@@ -67,7 +67,7 @@ exports.add = function add(DD_MODULES) {
 			};
 		},
 	};
-	return DD_MODULES;
+	return modules;
 };
 
 //! END_MODULE()
