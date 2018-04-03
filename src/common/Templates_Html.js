@@ -928,15 +928,15 @@ exports.add = function add(modules) {
 				});
 			});
 
-			return modules.locate('@doodad-js/templates')
-				.then(function(path) {
-					const basePath = path.set({file: null});
-					const rootOpts = root.getOptions();
-					resources.createResourcesLoader(templatesHtml, (rootOpts.fromSource ? basePath.combine('./src') : (root.serverSide ? basePath.combine('./build') : basePath)));
 
-					//return function init(_options) {
-					//};
-				});
+			return function init(options) {
+				const Promise = types.getPromise();
+				return Promise.resolve(root.serverSide ? files.Path.parse(module.filename) : modules.locate(/*! INJECT(TO_SOURCE(MANIFEST('name'))) */))
+					.then(function(location) {
+						location = location.set({file: ''});
+						resources.createResourcesLoader(templatesHtml, (root.serverSide ? location.moveUp(1) : location));
+					});
+			};
 		},
 	};
 	return modules;
