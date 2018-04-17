@@ -96,8 +96,10 @@
 				root.dispatchEvent(ev);
 			})
 			.catch(function(err) {
-				console.error(err);
-				throw err;
+				if (err && !err.trapped) {
+					console.error(err);
+					//throw err;
+				};
 			});
 	};
 })();
