@@ -47,12 +47,12 @@ exports.add = function add(modules) {
 				type: /*! REPLACE_BY(TO_SOURCE(MAKE_MANIFEST("type", "@doodad-js/templates"))) */ 'Package' /*! END_REPLACE()*/,
 			},
 		],
-			
+
 		create: function create(root, /*optional*/_options, _shared) {
 			//===================================
 			// Get namespaces
 			//===================================
-					
+
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
@@ -66,24 +66,24 @@ exports.add = function add(modules) {
 				templatesHtml = templates.Html,
 				templatesHtmlMake = templatesHtml.Make,
 				xml = tools.Xml;
-					
+
 
 			//===================================
 			// Natives
 			//===================================
-					
+
 			//tools.complete(_shared.Natives, {
 			//});
-					
+
 			//===================================
 			// Internal
 			//===================================
-					
+
 			const __Internal__ = {
 				xsdWarned: false,
 			};
-				
-				
+
+
 			templatesHtmlMake.REGISTER(make.Operation.$extend(
 			{
 				$TYPE_NAME: 'Compile',
@@ -126,7 +126,7 @@ exports.add = function add(modules) {
 						}, this);
 				}),
 			}));
-				
+
 
 			//===================================
 			// Init

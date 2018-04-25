@@ -43,7 +43,7 @@ exports.add = function add(modules) {
 			//===================================
 			// Get namespaces
 			//===================================
-				
+
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
@@ -59,30 +59,30 @@ exports.add = function add(modules) {
 				//nodejsIOInterfaces = nodeJsIO.Interfaces,
 				//safeEval = tools.SafeEval,
 				files = tools.Files;
-				
-				
+
+
 			//const __Internal__ = {
 			//};
 
-				
+
 			templatesHtml.REGISTER(doodad.BASE(templatesHtml.TemplateBase.$extend(
 				{
 					$TYPE_NAME: 'PageTemplate',
 					$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('PageTemplateBase')), true) */,
-						
+
 					request: doodad.PUBLIC(doodad.READ_ONLY(null)),
-						
+
 					__writeBuffer: doodad.PROTECTED(null),
 					__cacheStream: doodad.PROTECTED(null),
 					__cacheHandler: doodad.PROTECTED(null),
 					__compiledAttrs: doodad.PROTECTED(null),
 					__loadDone: doodad.PROTECTED(false),
-						
+
 					create: doodad.OVERRIDE(function create(request, cacheHandler, /*optional*/options) {
 						this._super(options);
-							
+
 						this.__cacheHandler = cacheHandler;
-	
+
 						const type = types.getType(this);
 
 						const state = request.getHandlerState(cacheHandler);
@@ -91,11 +91,11 @@ exports.add = function add(modules) {
 
 						types.setAttribute(this, 'request', request);
 					}),
-						
+
 					render: doodad.OVERRIDE(function render() {
 						this.__writeBuffer = '';
 						this.__cacheStream = null;
-							
+
 						return this._super();
 					}),
 
@@ -121,7 +121,7 @@ exports.add = function add(modules) {
 						this.overrideSuper();
 						return undefined;
 					}),
-						
+
 					asyncForEach: doodad.OVERRIDE(function asyncForEach(items, fn) {
 						const Promise = types.getPromise();
 						return Promise.resolve(items) // Items can be a Promise or a value
@@ -129,11 +129,11 @@ exports.add = function add(modules) {
 								return Promise.map(items, fn, {concurrency: 1, thisObj: this});
 							}, null, this);
 					}),
-						
+
 					asyncInclude: doodad.OVERRIDE(function asyncInclude(fn) {
 						return fn.call(this);
 					}),
-						
+
 					asyncScript: doodad.OVERRIDE(function asyncScript(fn) {
 						return fn.call(this);
 					}),
@@ -505,8 +505,8 @@ exports.add = function add(modules) {
 						//.catch(err => {console.error(err); throw err});
 					}),
 				})));
-				
-				
+
+
 			//===================================
 			// Init
 			//===================================

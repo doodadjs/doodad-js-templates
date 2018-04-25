@@ -44,7 +44,7 @@ exports.add = function add(modules) {
 			//===================================
 			// Get namespaces
 			//===================================
-				
+
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
@@ -60,14 +60,14 @@ exports.add = function add(modules) {
 				templates = doodad.Templates,
 				templatesHtml = templates.Html,
 				templatesDDTX = templatesHtml.DDTX;
-				
-				
+
+
 			const __Internal__ = {
 				templatesCached: tools.nullObject(),
 				ddtxCache: tools.nullObject(),
 			};
-				
-				
+
+
 			//===================================
 			// Options
 			//===================================
@@ -135,7 +135,7 @@ exports.add = function add(modules) {
 
 
 			__Internal__.surroundAsync = function surroundAsync(code) {
-				return (templatesHtml.useAsyncAwait() ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);'); 
+				return (templatesHtml.useAsyncAwait() ? 'await ' + code : 'pagePromise = pagePromise.then(function() {return ' + code + '}, null, this);');
 			};
 
 			templatesHtml.ADD('DDI', types.CustomEventTarget.$inherit(
@@ -143,17 +143,17 @@ exports.add = function add(modules) {
 				{
 					$TYPE_NAME: 'DDI',
 					$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('DDI')), true) */,
-						
+
 					$get: function $get(path, type, /*optional*/options) {
 						const key = path.toString();
-								
+
 						let ddi;
 						if (types.has(__Internal__.templatesCached, key)) {
 							//console.log('CACHED ' + key);
 							ddi = __Internal__.templatesCached[key];
 						} else {
 							ddi = __Internal__.templatesCached[key] = new this(path, type, options);
-								
+
 							if (root.getOptions().debug) {
 								const deleteFn = function _deleteFn(key, ddi) {
 									if (key in __Internal__.templatesCached) {
@@ -170,7 +170,7 @@ exports.add = function add(modules) {
 								}, {once: true});
 							};
 						};
-							
+
 						return ddi;
 					},
 				},
@@ -187,7 +187,7 @@ exports.add = function add(modules) {
 					parents: null,
 					cache: true,
 					cacheDuration: null,
-						
+
 					getScriptVariables: function getScriptVariables() {
 						/* eslint-disable */
 						return (function() {
