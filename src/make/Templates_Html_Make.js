@@ -28,7 +28,7 @@
 
 //! IF_SET("mjs")
 //! ELSE()
-	"use strict";
+"use strict";
 //! END_IF()
 
 exports.add = function add(modules) {
@@ -85,47 +85,47 @@ exports.add = function add(modules) {
 
 
 			templatesHtmlMake.REGISTER(make.Operation.$extend(
-			{
-				$TYPE_NAME: 'Compile',
+				{
+					$TYPE_NAME: 'Compile',
 
-				execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
+					execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
 					//const Promise = types.getPromise();
 
-					const source = this.taskData.parseVariables(item.source, { isPath: true });
-					const dest = this.taskData.parseVariables(item.destination, { isPath: true });
+						const source = this.taskData.parseVariables(item.source, { isPath: true });
+						const dest = this.taskData.parseVariables(item.destination, { isPath: true });
 
-					tools.log(tools.LogLevels.Info, "Compiling template '~0~' to '~1~'...", [source, dest]);
+						tools.log(tools.LogLevels.Info, "Compiling template '~0~' to '~1~'...", [source, dest]);
 
-					if (!__Internal__.xsdWarned && !xml.isAvailable({schemas: true})) {
-						__Internal__.xsdWarned = true;
-						tools.log(tools.LogLevels.Warning, "*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
-					};
+						if (!__Internal__.xsdWarned && !xml.isAvailable({schemas: true})) {
+							__Internal__.xsdWarned = true;
+							tools.log(tools.LogLevels.Warning, "*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
+						};
 
-					const ddt = templatesHtml.DDT.$get(source, options);
+						const ddt = templatesHtml.DDT.$get(source, options);
 
-					return ddt.open()
-						.then(function(dummy) {
-							const ddtType = ddt.doc.getRoot().getAttr('type');
+						return ddt.open()
+							.then(function(dummy) {
+								const ddtType = ddt.doc.getRoot().getAttr('type');
 
-							const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
-								ddtType: ddtType,
-								ddtVariables: ddt.getScriptVariables(),
-								cacheEnabled: ddt.cache,
-								cacheDuration: ddt.cacheDuration,
-								encoding: ddt.options.encoding,
-								renderTemplateBody: ddt.toString('', true),
-							});
+								const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
+									ddtType: ddtType,
+									ddtVariables: ddt.getScriptVariables(),
+									cacheEnabled: ddt.cache,
+									cacheDuration: ddt.cacheDuration,
+									encoding: ddt.options.encoding,
+									renderTemplateBody: ddt.toString('', true),
+								});
 
-							return {
-								'class': file.Javascript,
-								source: '~@doodad-js/templates/src/make/res/ddtx.templ.js',
-								destination: dest,
-								runDirectives: true,
-								variables: variables,
-							};
-						}, this);
-				}),
-			}));
+								return {
+									'class': file.Javascript,
+									source: '~@doodad-js/templates/src/make/res/ddtx.templ.js',
+									destination: dest,
+									runDirectives: true,
+									variables: variables,
+								};
+							}, this);
+					}),
+				}));
 
 
 			//===================================

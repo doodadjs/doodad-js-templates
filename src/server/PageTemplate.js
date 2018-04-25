@@ -25,11 +25,11 @@
 //! END_REPLACE()
 
 //! IF_SET("mjs")
-	//! INJECT("import {default as nodeCrypto} from 'crypto';");
+//! INJECT("import {default as nodeCrypto} from 'crypto';");
 //! ELSE()
-	"use strict";
+"use strict";
 
-	const nodeCrypto = require('crypto');
+const nodeCrypto = require('crypto');
 //! END_IF()
 
 const nodeCryptoCreateHash = nodeCrypto.createHash;
@@ -114,9 +114,9 @@ exports.add = function add(modules) {
 									};
 									return undefined;
 								}, null, this);
-								//.catch(function(err) {
-								//	types.DEBUGGER();
-								//});
+							//.catch(function(err) {
+							//	types.DEBUGGER();
+							//});
 						};
 						this.overrideSuper();
 						return undefined;
@@ -361,31 +361,31 @@ exports.add = function add(modules) {
 												types.freezeObject(key); // Key is complete
 												const FileSystemPage = root.getOptions().debug && namespaces.get('Doodad.NodeJs.Server.Http.FileSystemPage');
 												cached = this.__cacheHandler.getCached(this.request, {
-														create: true,
-														key: key,
-														onNew: (FileSystemPage && types.isLike(resolved.handler, FileSystemPage) ? function(cached) {
-															const path = resolved.handler.getSystemPath(this.request, resolved.url);
+													create: true,
+													key: key,
+													onNew: (FileSystemPage && types.isLike(resolved.handler, FileSystemPage) ? function(cached) {
+														const path = resolved.handler.getSystemPath(this.request, resolved.url);
 
-															if (path) {
-																let onUnloadListener = null;
+														if (path) {
+															let onUnloadListener = null;
 
-																cached.addEventListener('validate', function() {
-																	if (!onUnloadListener) {
-																		files.watch(path, onUnloadListener = function() {
-																			cached.invalidate();
-																		}, {once: true});
-																	};
-																});
+															cached.addEventListener('validate', function() {
+																if (!onUnloadListener) {
+																	files.watch(path, onUnloadListener = function() {
+																		cached.invalidate();
+																	}, {once: true});
+																};
+															});
 
-																cached.addEventListener('invalidate', function() {
-																	if (onUnloadListener) {
-																		files.unwatch(path, onUnloadListener);
-																		onUnloadListener = null;
-																	};
-																});
-															};
-														} : null)
-													}
+															cached.addEventListener('invalidate', function() {
+																if (onUnloadListener) {
+																	files.unwatch(path, onUnloadListener);
+																	onUnloadListener = null;
+																};
+															});
+														};
+													} : null)
+												}
 												);
 											};
 											if (cached && cached.isValid()) {
