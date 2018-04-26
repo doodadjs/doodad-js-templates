@@ -461,7 +461,8 @@ exports.add = function add(modules) {
 						const Promise = types.getPromise();
 						let compiledAttrs = this.__compiledAttrs;
 						if (!compiledAttrs) {
-							this.__compiledAttrs = compiledAttrs = tools.nullObject();
+							compiledAttrs = tools.nullObject();
+							this.__compiledAttrs = compiledAttrs;
 						};
 						compiledAttrs[key] = function() {
 							let srcAttr = compiledAttrs[src];
@@ -479,7 +480,8 @@ exports.add = function add(modules) {
 					compileAttr: doodad.OVERRIDE(function asyncCompileAttr(key, value) {
 						let compiledAttrs = this.__compiledAttrs;
 						if (!compiledAttrs) {
-							this.__compiledAttrs = compiledAttrs = tools.nullObject();
+							compiledAttrs = tools.nullObject();
+							this.__compiledAttrs = compiledAttrs;
 						};
 						compiledAttrs[key] = function() {
 							return value;

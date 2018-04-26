@@ -151,8 +151,11 @@ exports.add = function add(modules) {
 						if (types.has(__Internal__.templatesCached, key)) {
 							//console.log('CACHED ' + key);
 							ddi = __Internal__.templatesCached[key];
+
 						} else {
-							ddi = __Internal__.templatesCached[key] = new this(path, type, options);
+							ddi = new this(path, type, options);
+
+							__Internal__.templatesCached[key] = ddi;
 
 							if (root.getOptions().debug) {
 								const deleteFn = function _deleteFn(key, ddi) {
@@ -196,7 +199,7 @@ exports.add = function add(modules) {
 							const Promise = types.getPromise();
 						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 					},
-						
+
 					getScriptHeader: function getScriptHeader() {
 						/* eslint-disable */
 						// NOTE: Returns the header of the "renderTemplate" function
@@ -205,14 +208,14 @@ exports.add = function add(modules) {
 							const page = this;
 						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 					},
-						
+
 					getScriptFooter: function getScriptFooter() {
 						// NOTE: Returns the footer of the "renderTemplate" function
 						//return (function() {
 						//}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 						return "";
 					},
-						
+
 					parse: function parse() {
 						/* eslint no-useless-concat: "off" */
 
@@ -227,7 +230,7 @@ exports.add = function add(modules) {
 							const DEFAULT_BOOT_TEMPL_URL = '?res=@doodad-js/templates/Boot.min.js';
 
 							const RESERVED_OBJ_PROPS = ['__proto__', 'toString', 'toValue', 'toJSON', 'toSource'];
-							
+
 							const doctype = this.doc.getDocumentType() && tools.trim(this.doc.getDocumentType().getValue()).split(' ');
 							if (!doctype || (doctype[0].toLowerCase() !== this.type)) {
 								throw new types.ParseError("Document type is missing or invalid.");
@@ -296,7 +299,7 @@ exports.add = function add(modules) {
 									state.html = '';
 								};
 							};
-							
+
 							const fnHeader = function _fnHeader() {
 								if (!templatesHtml.useAsyncAwait()) {
 									codeParts[codeParts.length] = "let pagePromise = Promise.resolve();";
@@ -365,7 +368,7 @@ exports.add = function add(modules) {
 									state.writes = '';
 								};
 							};
-							
+
 							const prepareExpr = function _prepareExpr(expr) {
 								return 'evalExpr(' + tools.toSource(expr) + ', false)';
 							};
@@ -644,7 +647,7 @@ exports.add = function add(modules) {
 								};
 							};
 
-							
+
 							const state = {
 								html: '',
 								writes: '',
@@ -681,7 +684,7 @@ exports.add = function add(modules) {
 							writeAsyncWrites(state);
 							fnFooter();
 
-							
+
 							self.cache = cache[1];
 							self.cacheDuration = cacheDuration[1];
 
@@ -698,7 +701,7 @@ exports.add = function add(modules) {
 						this.path = path;
 						this.parents = new types.Map();
 					}),
-						
+
 					open: function open() {
 						const Promise = types.getPromise();
 
@@ -757,7 +760,7 @@ exports.add = function add(modules) {
 									code += '\n' + newLevel + part;
 								};
 							};
-							return level + (templatesHtml.useAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' + 
+							return level + (templatesHtml.useAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' +
 										'\n' + newLevel +
 										(writeHeader && this.getScriptHeader() || '') +
 										'\n' + code +
@@ -769,14 +772,14 @@ exports.add = function add(modules) {
 					},
 				}
 			));
-				
-									
+
+
 			templatesHtml.ADD('DDT', templatesHtml.DDI.$inherit(
 				/*typeProto*/
 				{
 					$TYPE_NAME: 'DDT',
 					$TYPE_UUID: '' /*! INJECT('+' + TO_SOURCE(UUID('DDT')), true) */,
-						
+
 					$get: types.SUPER(function $get(path, /*optional*/options) {
 						return this._super(path, 'ddt', options);
 					}),
@@ -790,7 +793,7 @@ exports.add = function add(modules) {
 								const ddtNode = this.doc.getRoot(),
 									name = ddtNode.getAttr('type'),
 									templName = name.replace(/\./g, "_");
-									
+
 								let templ = types.get(templatesDDTX, templName);
 								if (templ) {
 									return templ;
@@ -814,7 +817,7 @@ exports.add = function add(modules) {
 										if (!types._implements(type, templatesHtml.PageTemplate)) {
 											throw new types.ValueError("Unknown page template '~0~'.", [name]);
 										};
-								
+
 										const code = this.toString('', true);
 							//console.log(code);
 										const locals = {root: root};
@@ -832,7 +835,7 @@ exports.add = function add(modules) {
 												cacheDuration: this.cacheDuration,
 												encoding: this.options.encoding,
 											},
-									
+
 											renderTemplate: doodad.OVERRIDE(fn),
 										}));
 
@@ -843,14 +846,14 @@ exports.add = function add(modules) {
 											templatesDDTX.UNREGISTER(templ);
 											types.DESTROY(templ);
 										});
-								
+
 										return templ;
 									}, null, this);
 							}, null, this);
 					},
 				}
 			));
-			
+
 
 			templatesHtml.ADD('getTemplate', function getTemplate(/*optional*/module, path, /*optional*/options) {
 				const Promise = types.getPromise();
