@@ -89,7 +89,7 @@ exports.add = function add(modules) {
 					$TYPE_NAME: 'Compile',
 
 					execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
-					//const Promise = types.getPromise();
+						//const Promise = types.getPromise();
 
 						const source = this.taskData.parseVariables(item.source, { isPath: true });
 						const dest = this.taskData.parseVariables(item.destination, { isPath: true });
