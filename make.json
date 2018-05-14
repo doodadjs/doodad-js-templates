@@ -1,137 +1,137 @@
+// JSON5
+// Encoding: utf8
+//
+// doodad-js  -  Object-oriented programming framework
+//    File: make.json - Make data file
+//    Project home: https://github.com/doodadjs/
+//    Author: Claude Petit, Quebec city
+//    Contact: doodadjs [at] gmail.com
+//    Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !
+//    Licence: Apache V2
+//
+//    Copyright 2015-2018 Claude Petit
+//
+//    Licensed under the Apache License, Version 2.0 (the \"License\");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an \"AS IS\" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
 {
-  "//": "Encoding: utf8",
-  "//": "",
-  "//": "    doodad-js  -  Object-oriented programming framework",
-  "//": "    File: make.json - Make data file",
-  "//": "    Project home: https://github.com/doodadjs/",
-  "//": "    Author: Claude Petit, Quebec city",
-  "//": "    Contact: doodadjs [at] gmail.com",
-  "//": "    Note: I'm still in alpha-beta stage, so expect to find some bugs or incomplete parts !",
-  "//": "    Licence: Apache V2",
-  "//": "",
-  "//": "    Copyright 2015-2018 Claude Petit",
-  "//": "",
-  "//": "    Licensed under the Apache License, Version 2.0 (the \"License\");",
-  "//": "    you may not use this file except in compliance with the License.",
-  "//": "    You may obtain a copy of the License at",
-  "//": "",
-  "//": "     http://www.apache.org/licenses/LICENSE-2.0",
-  "//": "",
-  "//": "    Unless required by applicable law or agreed to in writing, software",
-  "//": "    distributed under the License is distributed on an \"AS IS\" BASIS,",
-  "//": "    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.",
-  "//": "    See the License for the specific language governing permissions and",
-  "//": "    limitations under the License.",
-  "//": "",
-  "version": "4.0.0",
-  "stage": "a",
-  "dependencies": [
-    {
-      "name": "@doodad-js/core",
-      "client": true,
-      "server": true,
-      "browserify": true
-    },
-    {
-      "name": "@doodad-js/io",
-      "client": true,
-      "server": true,
-      "browserify": true
-    },
-    {
-      "name": "@doodad-js/widgets",
-      "client": true,
-      "server": true,
-      "browserify": true
-    },
-    {
-      "name": "@doodad-js/xml",
-      "client": true,
-      "server": true,
-      "browserify": true
-    },
-    {
-      "name": "@doodad-js/safeeval",
-      "client": true,
-      "server": true,
-      "browserify": true
-    }
-  ],
-  "modules": [
-    {
-      "src": "common/Templates_Html.js",
-      "client": true,
-      "server": true,
-      "browserify": true
-    },
-    {
-      "src": "server/PageTemplate.js",
-      "client": false,
-      "server": true,
-      "browserify": false
-    }
-  ],
-  "resources": [
-    {
-      "name": null,
-      "namespace": null,
-      "sourceBase": "%SOURCEDIR%/",
-      "source": "server/res",
-      "client": false,
-      "server": true,
-      "browserify": false
-    },
-    {
-      "name": "Doodad.Templates.Html/Resources",
-      "namespace": "Doodad.Templates.Html",
-      "sourceBase": "%SOURCEDIR%/",
-      "source": "common/res",
-      "client": true,
-      "server": true,
-      "browserify": true
-    }
-  ],
-  "tasks": {
-    "make": {
-      "operations": [
-        {
-          "class": "Make.Generate.Package"
-        },
-
-        {
-          "class": "Make.Task",
-          "name": "install"
-        },
-        {
-          "class": "Make.Task",
-          "name": "browserify"
-        },
-        {
-          "class": "Make.Task",
-          "name": "webpack"
-        }
-      ]
-    },
-    "install": {
-      "operations": [
-        {
-          "class": "Make.Generate.Package"
-        }
-      ]
-    },
-    "browserify": {
-      "operations": [
-        {
-          "class": "Make.Generate.Package"
-        }
-      ]
-    },
-    "webpack": {
-      "operations": [
-        {
-          "class": "Make.Generate.Package"
-        }
-      ]
-    }
-  }
+	version: "4.0.0",
+	stage: "a",
+	dependencies: [
+		{
+			name: "@doodad-js/core",
+			client: true,
+			server: true,
+			browserify: true
+		},
+		{
+			name: "@doodad-js/io",
+			client: true,
+			server: true,
+			browserify: true
+		},
+		{
+			name: "@doodad-js/widgets",
+			client: true,
+			server: true,
+			browserify: true
+		},
+		{
+			name: "@doodad-js/xml",
+			client: true,
+			server: true,
+			browserify: true
+		},
+		{
+			name: "@doodad-js/safeeval",
+			client: true,
+			server: true,
+			browserify: true
+		}
+	],
+	modules: [
+		{
+			src: "common/Templates_Html.js",
+			client: true,
+			server: true,
+			browserify: true
+		},
+		{
+			src: "server/PageTemplate.js",
+			client: false,
+			server: true,
+			browserify: false
+		}
+	],
+	resources: [
+		{
+			name: null,
+			namespace: null,
+			sourceBase: "%SOURCEDIR%/",
+			source: "server/res",
+			client: false,
+			server: true,
+			browserify: false
+		},
+		{
+			name: "Doodad.Templates.Html/Resources",
+			namespace: "Doodad.Templates.Html",
+			sourceBase: "%SOURCEDIR%/",
+			source: "common/res",
+			client: true,
+			server: true,
+			browserify: true
+		}
+	],
+	tasks: {
+		make: {
+			operations: [
+				{
+					class: "Make.Generate.Package"
+				},
+				{
+					class: "Make.Task",
+					name: "install"
+				},
+				{
+					class: "Make.Task",
+					name: "browserify"
+				},
+				{
+					class: "Make.Task",
+					name: "webpack"
+				}
+			]
+		},
+		install: {
+			operations: [
+				{
+					class: "Make.Generate.Package"
+				}
+			]
+		},
+		browserify: {
+			operations: [
+				{
+					class: "Make.Generate.Package"
+				}
+			]
+		},
+		webpack: {
+			operations: [
+				{
+					class: "Make.Generate.Package"
+				}
+			]
+		}
+	}
 }
