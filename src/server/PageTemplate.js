@@ -86,8 +86,9 @@ exports.add = function add(modules) {
 						const type = types.getType(this);
 
 						const state = request.getHandlerState(cacheHandler);
-						state.noMainFile = !types.get(type.$options, 'cache', false);
-						state.defaultDuration = types.get(type.$options, 'cacheDuration', null);
+						const cached = types.get(type.$options, 'cache', false);
+						state.noMainFile = !cached;
+						state.defaultDuration = (cached ? types.get(type.$options, 'cacheDuration', null) : '');
 
 						types.setAttribute(this, 'request', request);
 					}),
@@ -360,11 +361,12 @@ exports.add = function add(modules) {
 												});
 												types.freezeObject(key); // Key is complete
 												const FileSystemPage = root.getOptions().debug && namespaces.get('Doodad.NodeJs.Server.Http.FileSystemPage');
-												cached = this.__cacheHandler.getCached(this.request, {
+												const request = this.request;
+												cached = this.__cacheHandler.getCached(request, {
 													create: true,
 													key: key,
 													onNew: (FileSystemPage && types.isLike(resolved.handler, FileSystemPage) ? function(cached) {
-														const path = resolved.handler.getSystemPath(this.request, resolved.url);
+														const path = resolved.handler.getSystemPath(request, resolved.url);
 
 														if (path) {
 															let onUnloadListener = null;

@@ -198,7 +198,7 @@ exports.add = function add(modules) {
 					codeParts: null,
 					parents: null,
 					cache: true,
-					cacheDuration: null,
+					cacheDuration: 'P1D',
 
 					getScriptHeader: function getScriptHeader() {
 						/* eslint-disable */
@@ -292,8 +292,8 @@ exports.add = function add(modules) {
 
 
 							// Values only
-							let cache = false,
-								cacheDuration = null,
+							let cache = types.toBoolean(self.cache),
+								cacheDuration = types.toString(self.cacheDuration),
 								defaultIntegrity = null;
 
 							// Expressions or values
@@ -305,9 +305,9 @@ exports.add = function add(modules) {
 							if (self.type === 'ddt') {
 								const attrs = ddi.getAttrs();
 
-								[cache] = getAttrValue(attrs, 'cache', types.toBoolean, false, false);
-								[cacheDuration] = getAttrValue(attrs, 'cacheDuration', types.toInteger, null, false);
-								[defaultIntegrity] = getAttrValue(attrs, 'defaultIntegrity', types.toString, null, false);
+								[cache] = getAttrValue(attrs, 'cache', types.toBoolean, cache, false);
+								[cacheDuration] = getAttrValue(attrs, 'cacheDuration', types.toString, cacheDuration, false);
+								[defaultIntegrity] = getAttrValue(attrs, 'defaultIntegrity', types.toString, '', false);
 
 								[doodadPackageUrl, doodadPackageUrlIsExpr] = getAttrValue(attrs, 'doodadPackageUrl', types.toString, DEFAULT_DOODAD_PKG_URL, true);
 								[bootTemplateUrl, bootTemplateUrlIsExpr] = getAttrValue(attrs, 'bootTemplateUrl', types.toString, DEFAULT_BOOT_TEMPL_URL, true);
