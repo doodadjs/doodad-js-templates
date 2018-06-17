@@ -110,15 +110,6 @@ exports.add = function add(modules) {
 
 					$options: doodad.PUBLIC(doodad.READ_ONLY( {} )),
 
-					getFixedVariables: doodad.PROTECTED(function getFixedVariables() {
-						return {
-							root,
-							types,
-							tools,
-							Promise: types.Promise,
-						};
-					}),
-
 					renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),  // function()
 
 					render: doodad.OVERRIDE(function render() {
@@ -200,19 +191,22 @@ exports.add = function add(modules) {
 					cache: true,
 					cacheDuration: 'P1D',
 
+					getScriptLocals: doodad.PROTECTED(function getScriptLocals() {
+						return {
+							root,
+							doodad,
+							types,
+							tools,
+							Promise: types.getPromise(),
+						};
+					}),
+
 					getScriptHeader: function getScriptHeader() {
 						/* eslint-disable */
 
 						// NOTE: Returns the header of the "renderTemplate" function
 						return (function() {
-							const doodad = root.Doodad,
-								types = doodad.Types,
-								tools = doodad.Tools;
-
-							// Gives 'page' object everywhere in "renderTemplate" to avoid using 'this' which is less descriptive.
-							const page = this;
-
-							const fixedVars = tools.nullObject(page.getFixedVariables());
+							const page = locals.page = this;
 
 							const createEvalExpr = function _createEvalExpr(dynVars) {
 								let evalFn = null;
@@ -222,7 +216,7 @@ exports.add = function add(modules) {
 									};
 									let fn = evalFn;
 									if (!evalFn) {
-										const variables = tools.nullObject(page.options.variables, dynVars, fixedVars);
+										const variables = tools.nullObject(page.options.variables, dynVars, locals);
 										fn = tools.createEval(types.keys(variables)).apply(null, types.values(variables));
 									};
 									const result = (expr ? fn(expr) : undefined);
@@ -824,10 +818,10 @@ exports.add = function add(modules) {
 
 										const code = this.toString('', true);
 							//console.log(code);
-										const locals = {root};
+										const locals = this.getScriptLocals();
 										let fn = tools.createEval(types.keys(locals));
 										fn = fn.apply(null, types.values(locals));
-										fn = fn('(' + code + ')');
+										fn = fn('(function(locals) {return (' + code + ');})')(locals);
 							//console.log(fn);
 
 										templ = templatesDDTX.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
