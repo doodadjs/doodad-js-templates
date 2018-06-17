@@ -364,7 +364,7 @@ exports.add = function add(modules) {
 												const request = this.request;
 												cached = this.__cacheHandler.getCached(request, {
 													create: true,
-													key: key,
+													section: key,
 													onNew: (FileSystemPage && types.isLike(resolved.handler, FileSystemPage) ? function(cached) {
 														const path = resolved.handler.getSystemPath(request, resolved.url);
 
