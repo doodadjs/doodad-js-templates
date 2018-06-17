@@ -210,13 +210,17 @@ exports.add = function add(modules) {
 
 							const createEvalExpr = function _createEvalExpr(dynVars) {
 								let evalFn = null;
-								return function _evalExpr(expr, refresh) {
+								const evalExpr = function _evalExpr(expr, /*optional*/refresh) {
+									if (evalExpr.forceRefresh) {
+										refresh = true;
+										evalExpr.forceRefresh = false;
+									};
 									if (refresh) {
 										evalFn = null;
 									};
 									let fn = evalFn;
 									if (!evalFn) {
-										const variables = tools.nullObject(page.options.variables, dynVars, locals);
+										const variables = tools.nullObject(page.options.variables, evalExpr.dynVars, locals);
 										fn = tools.createEval(types.keys(variables)).apply(null, types.values(variables));
 									};
 									const result = (expr ? fn(expr) : undefined);
@@ -225,7 +229,12 @@ exports.add = function add(modules) {
 									};
 									return result;
 								};
+								evalExpr.dynVars = dynVars;
+								evalExpr.forceRefresh = false;
+								return evalExpr;
 							};
+
+							const oldDynVars = null;
 						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 					},
 
@@ -321,15 +330,16 @@ exports.add = function add(modules) {
 								};
 
 								// Expressions
-								codeParts[codeParts.length] = "const dynVars = tools.nullObject();"
+								codeParts[codeParts.length] = "const dynVars = tools.nullObject(oldDynVars);"
 								codeParts[codeParts.length] = "const evalExpr = createEvalExpr(dynVars);"
 							};
 
-							const startFn = function _startFn(/*optional*/args) {
+							const startFn = function _startFn(...argNames) {
+								codeParts[codeParts.length] = '(function(oldDynVars) {';
 								if (templatesHtml.useAsyncAwait()) {
-									codeParts[codeParts.length] = '(async function(' + (args || '') + ') {';
+									codeParts[codeParts.length] = 'return (async function(' + argNames.join(', ') + ') {';
 								} else {
-									codeParts[codeParts.length] = '(function(' + (args || '') + ') {';
+									codeParts[codeParts.length] = 'return (function(' + argNames.join(', ') + ') {';
 								};
 								fnHeader();
 							};
@@ -359,6 +369,7 @@ exports.add = function add(modules) {
 							const endFn = function _endFn() {
 								fnFooter();
 								codeParts[codeParts.length] = '})';
+								codeParts[codeParts.length] = '})(dynVars)';
 							};
 
 							const writeAsyncWrites = function _writeAsyncWrites(state) {
@@ -369,9 +380,6 @@ exports.add = function add(modules) {
 							};
 
 							const prepareExpr = function _prepareExpr(expr, /*optional*/refresh) {
-								//if (types.isNothing(refresh)) {
-								//	refresh = false;
-								//};
 								return 'evalExpr(' + tools.toSource(expr) + ', ' + tools.toSource(types.toBoolean(refresh)) + ')';
 							};
 
@@ -416,7 +424,7 @@ exports.add = function add(modules) {
 														codeParts[codeParts.length] = startAsync('page.asyncScript(');
 														startFn();
 													};
-													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
+													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr'), false) + ';');
 												};
 												codeParts[codeParts.length] = 'if (__expr__) {';
 												const newState = tools.extend(state, {isHtml: false, isIf: false});
@@ -431,7 +439,7 @@ exports.add = function add(modules) {
 														codeParts[codeParts.length] = startAsync('page.asyncScript(');
 														startFn();
 													};
-													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
+													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr', false)) + ';');
 												};
 												codeParts[codeParts.length] = 'if (!__expr__) {';
 												const newState = tools.extend(state, {isHtml: false, isIf: false});
@@ -446,7 +454,7 @@ exports.add = function add(modules) {
 														codeParts[codeParts.length] = startAsync('page.asyncScript(');
 														startFn();
 													};
-													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr')) + ';');
+													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr'), false) + ';');
 													const newState = tools.extend(state, {isHtml: false, isIf: true});
 													parseNode(child, newState);
 													writeHTML(newState);
@@ -459,7 +467,9 @@ exports.add = function add(modules) {
 													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + (child.getChildren().getCount() && child.getChildren().getAt(0).getValue()) + '});'); // CDATA or Text
 												} else if (!state.isModules && (name === 'for-each')) {
 													codeParts[codeParts.length] = startAsync('page.asyncForEach(' + (child.getAttr('items') || 'items') + ', ');
-													startFn(child.getAttr('item') || 'item');
+													startFn('item');
+													codeParts[codeParts.length] = 'dynVars[' + tools.toSource(child.getAttr('item') || 'item') + '] = item;';
+													codeParts[codeParts.length] = 'evalExpr.forceRefresh = true;';
 													const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
 													parseNode(child, newState);
 													writeHTML(state);
@@ -467,7 +477,7 @@ exports.add = function add(modules) {
 													endFn();
 													codeParts[codeParts.length] = endAsync(');');
 												} else if (!state.isModules && (name === 'eval')) {
-													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(tools.escapeHtml(' + prepareExpr(child.getChildren().getAt(0).getValue()) + ' + "", true))});'); // CDATA or Text
+													codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncScript(function() {' + 'return page.writeAsync(tools.escapeHtml(' + prepareExpr(child.getChildren().getAt(0).getValue(), false) + ' + "", true))});'); // CDATA or Text
 												} else if (!state.isModules && (name === 'variable')) {
 													const name = child.getAttr('name'); // required
 													const expr = child.getAttr('expr'); // required
@@ -482,8 +492,9 @@ exports.add = function add(modules) {
 													state.promises[state.promises.length] = ddi.open();
 													ddi.parents.set(self, self.path.toString());
 												} else if (!state.isModules && (name === 'cache') && !state.cacheId) {
-													state.cacheId = child.getAttr('id');
-													const duration = child.getAttr("duration");
+													cache = false;
+													state.cacheId = child.getAttr('id'); // required
+													const duration = child.getAttr("duration") || cacheDuration;
 													codeParts[codeParts.length] = startAsync('page.asyncCache(' + tools.toSource(state.cacheId) + ', ' + tools.toSource(duration) + ', ');
 													startFn();
 													const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
@@ -598,7 +609,7 @@ exports.add = function add(modules) {
 															const value = attr.getValue(),
 																compute = (attr.getBaseURI() === DDT_URI);
 															if (compute) {
-																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ', ' + prepareExpr(value) + ');');
+																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ', ' + prepareExpr(value, false) + ');');
 															} else {
 																codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr(' + tools.toSource(key) + ', ' + tools.toSource(value) + ');');
 															};
