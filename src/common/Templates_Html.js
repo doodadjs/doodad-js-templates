@@ -689,8 +689,8 @@ exports.add = function add(modules) {
 							fnFooter();
 
 
-							self.cache = cache[1];
-							self.cacheDuration = cacheDuration[1];
+							self.cache = cache;
+							self.cacheDuration = cacheDuration;
 
 
 							return Promise.all(state.promises);
