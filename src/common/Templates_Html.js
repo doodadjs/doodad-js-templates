@@ -110,7 +110,16 @@ exports.add = function add(modules) {
 
 					$options: doodad.PUBLIC(doodad.READ_ONLY( {} )),
 
-					renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),
+					getFixedVariables: doodad.PROTECTED(function getFixedVariables() {
+						return {
+							root,
+							types,
+							tools,
+							Promise: types.Promise,
+						};
+					}),
+
+					renderTemplate: doodad.PROTECTED(doodad.ASYNC(doodad.MUST_OVERRIDE())),  // function()
 
 					render: doodad.OVERRIDE(function render() {
 						return this.renderTemplate()
@@ -191,21 +200,38 @@ exports.add = function add(modules) {
 					cache: true,
 					cacheDuration: null,
 
-					getScriptVariables: function getScriptVariables() {
-						/* eslint-disable */
-						return (function() {
-							const types = root.Doodad.Types;
-							const tools = root.Doodad.Tools;
-							const Promise = types.getPromise();
-						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
-					},
-
 					getScriptHeader: function getScriptHeader() {
 						/* eslint-disable */
+
 						// NOTE: Returns the header of the "renderTemplate" function
 						return (function() {
+							const doodad = root.Doodad,
+								types = doodad.Types,
+								tools = doodad.Tools;
+
 							// Gives 'page' object everywhere in "renderTemplate" to avoid using 'this' which is less descriptive.
 							const page = this;
+
+							const fixedVars = tools.nullObject(page.getFixedVariables());
+
+							const createEvalExpr = function _createEvalExpr(dynVars) {
+								let evalFn = null;
+								return function _evalExpr(expr, refresh) {
+									if (refresh) {
+										evalFn = null;
+									};
+									let fn = evalFn;
+									if (!evalFn) {
+										const variables = tools.nullObject(page.options.variables, dynVars, fixedVars);
+										fn = tools.createEval(types.keys(variables)).apply(null, types.values(variables));
+									};
+									const result = (expr ? fn(expr) : undefined);
+									if (!evalFn && !refresh) {
+										evalFn = fn;
+									};
+									return result;
+								};
+							};
 						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
 					},
 
@@ -306,24 +332,8 @@ exports.add = function add(modules) {
 								};
 
 								// Expressions
-								codeParts[codeParts.length] = "const evalExpr = (function() {" +
-									"let evalFn = null;" +
-									"return function(expr, refresh) {" +
-										"if (refresh) {" +
-											"evalFn = null;" +
-										"};" +
-										"let fn = evalFn;" +
-										"if (!evalFn) {" +
-											"const variables = tools.nullObject(page.options.variables);" +
-											"fn = " + tools.generateCreateEval() + "(types.keys(variables)).apply(null, types.values(variables));" +
-										"};" +
-										"const result = (expr ? fn(expr) : undefined);" +
-										"if (!evalFn && !refresh) {" +
-											"evalFn = fn;" +
-										"};" +
-										"return result;" +
-									"};" +
-								"})();";
+								codeParts[codeParts.length] = "const dynVars = tools.nullObject();"
+								codeParts[codeParts.length] = "const evalExpr = createEvalExpr(dynVars);"
 							};
 
 							const startFn = function _startFn(/*optional*/args) {
@@ -369,12 +379,15 @@ exports.add = function add(modules) {
 								};
 							};
 
-							const prepareExpr = function _prepareExpr(expr) {
-								return 'evalExpr(' + tools.toSource(expr) + ', false)';
+							const prepareExpr = function _prepareExpr(expr, /*optional*/refresh) {
+								//if (types.isNothing(refresh)) {
+								//	refresh = false;
+								//};
+								return 'evalExpr(' + tools.toSource(expr) + ', ' + tools.toSource(types.toBoolean(refresh)) + ')';
 							};
 
-							const getExprFromAttrVal = function _getExprFromAttrVal(attrVal, refresh) {
-								return (attrVal[0] ? prepareExpr(attrVal[1]) : tools.toSource(attrVal[1]));
+							const getExprFromAttrVal = function _getExprFromAttrVal(attrVal, /*optional*/refresh) {
+								return (attrVal[0] ? prepareExpr(attrVal[1], refresh) : tools.toSource(attrVal[1]));
 							};
 
 							const reduceStateOptions = function _reduceStateOptions(options) {
@@ -469,12 +482,8 @@ exports.add = function add(modules) {
 												} else if (!state.isModules && (name === 'variable')) {
 													const name = child.getAttr('name'); // required
 													const expr = child.getAttr('expr'); // required
-													if (name) {
-														if (expr) {
-															codeParts[codeParts.length] = 'let ' + name + ' = ' + prepareExpr(expr) + ';';
-														} else {
-															codeParts[codeParts.length] = 'let ' + name + ' = null;';
-														};
+													if (name && expr) {
+														codeParts[codeParts.length] = 'dynVars[' + tools.toSource(name) + '] = ' + prepareExpr(expr, true) + ';';
 													};
 												} else if (!state.isModules && (name === 'include')) {
 													let path = child.getAttr('src');
@@ -820,10 +829,10 @@ exports.add = function add(modules) {
 
 										const code = this.toString('', true);
 							//console.log(code);
-										const locals = {root: root};
+										const locals = {root};
 										let fn = tools.createEval(types.keys(locals));
 										fn = fn.apply(null, types.values(locals));
-										fn = fn('(function() {' + this.getScriptVariables() + ';\nreturn (' + code + ')})()');
+										fn = fn('(' + code + ')');
 							//console.log(fn);
 
 										templ = templatesDDTX.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
