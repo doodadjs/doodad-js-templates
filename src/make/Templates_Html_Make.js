@@ -109,7 +109,6 @@ exports.add = function add(modules) {
 
 								const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
 									ddtType: ddtType,
-									ddtVariables: ddt.getScriptVariables(),
 									cacheEnabled: ddt.cache,
 									cacheDuration: ddt.cacheDuration,
 									encoding: ddt.options.encoding,

@@ -18,7 +18,6 @@ exports.add = function add(modules) {
 
 			const __Internal__ = {};
 
-			// Create a function to isolate variables injected by VAR("ddtVariables")
 			__Internal__.createDDTX = function() {
 				const Promise = types.getPromise();
 				const name = /*! INJECT(TO_SOURCE(VAR("ddtType"))) */;
@@ -41,22 +40,18 @@ exports.add = function add(modules) {
 						throw new types.ValueError("Unknown page template '~0~'.", [name]);
 					};
 
-					{
-						/*! INJECT(VAR("ddtVariables")) */
+					return templatesDDTX.REGISTER(type.$extend(
+						{
+							$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
 
-						return templatesDDTX.REGISTER(type.$extend(
-							{
-								$TYPE_NAME: /*! INJECT(TO_SOURCE(VAR("ddtType").replace(/\./g, "_"))) */,
+							$options: {
+								cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
+								cacheDuration: /*! INJECT(TO_SOURCE(VAR("cacheDuration"))) */,
+								encoding: /*! INJECT(TO_SOURCE(VAR("encoding"))) */,
+							},
 
-								$options: {
-									cache: /*! INJECT(TO_SOURCE(VAR("cacheEnabled"))) */,
-									cacheDuration: /*! INJECT(TO_SOURCE(VAR("cacheDuration"))) */,
-									encoding: /*! INJECT(TO_SOURCE(VAR("encoding"))) */,
-								},
-
-								renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
-							}));
-					};
+							renderTemplate: doodad.OVERRIDE(/*! INJECT(VAR("renderTemplateBody")) */),
+						}));
 				});
 			};
 
