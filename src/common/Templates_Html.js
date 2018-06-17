@@ -287,35 +287,30 @@ exports.add = function add(modules) {
 								if (type && !isExpr) {
 									value = type(value);
 								};
-								return [isExpr, value];
+								return [value, isExpr];
 							};
 
 
-							let cache,
-								cacheDuration,
-								defaultIntegrity;
+							// Values only
+							let cache = false,
+								cacheDuration = null,
+								defaultIntegrity = null;
 
-							let doodadPackageUrl,
-								bootTemplateUrl;
+							// Expressions or values
+							let doodadPackageUrl = null,
+								doodadPackageUrlIsExpr = false,
+								bootTemplateUrl = null,
+								bootTemplateUrlIsExpr = false;
 
 							if (self.type === 'ddt') {
 								const attrs = ddi.getAttrs();
 
-								cache = getAttrValue(attrs, 'cache', types.toBoolean, false, false);
-								cacheDuration = getAttrValue(attrs, 'cacheDuration', types.toInteger, null, false);
-								defaultIntegrity = getAttrValue(attrs, 'defaultIntegrity', types.toString, null, false);
+								[cache] = getAttrValue(attrs, 'cache', types.toBoolean, false, false);
+								[cacheDuration] = getAttrValue(attrs, 'cacheDuration', types.toInteger, null, false);
+								[defaultIntegrity] = getAttrValue(attrs, 'defaultIntegrity', types.toString, null, false);
 
-								doodadPackageUrl = getAttrValue(attrs, 'doodadPackageUrl', types.toString, DEFAULT_DOODAD_PKG_URL, true);
-								bootTemplateUrl = getAttrValue(attrs, 'bootTemplateUrl', types.toString, DEFAULT_BOOT_TEMPL_URL, true);
-
-							} else {
-								cache = [false, false];
-								cacheDuration = [false, null];
-								defaultIntegrity = [false, null];
-
-								doodadPackageUrl = [false, null];
-								bootTemplateUrl = [false, null];
-
+								[doodadPackageUrl, doodadPackageUrlIsExpr] = getAttrValue(attrs, 'doodadPackageUrl', types.toString, DEFAULT_DOODAD_PKG_URL, true);
+								[bootTemplateUrl, bootTemplateUrlIsExpr] = getAttrValue(attrs, 'bootTemplateUrl', types.toString, DEFAULT_BOOT_TEMPL_URL, true);
 							};
 
 
@@ -386,8 +381,8 @@ exports.add = function add(modules) {
 								return 'evalExpr(' + tools.toSource(expr) + ', ' + tools.toSource(types.toBoolean(refresh)) + ')';
 							};
 
-							const getExprFromAttrVal = function _getExprFromAttrVal(attrVal, /*optional*/refresh) {
-								return (attrVal[0] ? prepareExpr(attrVal[1], refresh) : tools.toSource(attrVal[1]));
+							const getExprFromAttrVal = function _getExprFromAttrVal(attrVal, isExpr) {
+								return (isExpr ? prepareExpr(attrVal, false) : tools.toSource(attrVal));
 							};
 
 							const reduceStateOptions = function _reduceStateOptions(options) {
@@ -395,7 +390,7 @@ exports.add = function add(modules) {
 									if (types.isJsObject(val)) {
 										return result + ',' + tools.toSource(name) + ':' + reduceStateOptions(val);
 									} else {
-										return result + ',' + tools.toSource(name) + ':' + getExprFromAttrVal(val);
+										return result + ',' + tools.toSource(name) + ':' + getExprFromAttrVal(...val);
 									};
 								}, '').slice(1) + '}';
 							};
@@ -515,12 +510,12 @@ exports.add = function add(modules) {
 													const optModule = child.getAttr('module'); // required
 													if (optModule && (tools.indexOf(RESERVED_OBJ_PROPS, optModule) < 0)) {
 														const attrs = child.getAttrs();
-														const optKey = getAttrValue(attrs, 'key', types.toString, null, false); // optional
+														const [optKey] = getAttrValue(attrs, 'key', types.toString, null, false); // optional
 														const optVal = getAttrValue(attrs, 'value', null, null, true); // required
-														if (optKey[1]) {
+														if (optKey) {
 															const MAX_DEPTH = 15;
 															const opt = state.options[optModule] || {};
-															const keys = optKey[1].split('.'),
+															const keys = optKey.split('.'),
 																keysLen = keys.length;
 															let lastOpt = opt;
 															for (let i = 0; (i < MAX_DEPTH) && (i < keysLen - 1); i++) {
@@ -552,7 +547,7 @@ exports.add = function add(modules) {
 														module: child.getAttr("module") || null,
 														path: child.getAttr("path") || null,
 														optional: types.toBoolean(child.getAttr("optional") || false),
-														integrity: child.getAttr("integrity") || defaultIntegrity[1] || null,
+														integrity: child.getAttr("integrity") || defaultIntegrity || null,
 													});
 												};
 											};
@@ -589,7 +584,7 @@ exports.add = function add(modules) {
 												} else if (name === 'link') {
 													integrity = 'href';
 												};
-												if ((!integrity || !defaultIntegrity[1]) && tools.findItem(attrs, function(attr) {
+												if ((!integrity || !defaultIntegrity) && tools.findItem(attrs, function(attr) {
 													return (attr.getBaseURI() === DDT_URI);
 												}) === null) {
 													attrs.forEach(function forEachAttr(attr) {
@@ -602,7 +597,7 @@ exports.add = function add(modules) {
 												} else {
 													writeHTML(state);
 													writeAsyncWrites(state);
-													const integrityValue = defaultIntegrity[1];
+													const integrityValue = defaultIntegrity;
 													attrs.forEach(function forEachAttr(attr) {
 														const key = attr.getName();
 														if (ignoreAttrs.indexOf(key) < 0) {
@@ -632,7 +627,7 @@ exports.add = function add(modules) {
 													if (addModules) {
 														writeHTML(state);
 														writeAsyncWrites(state);
-														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, 5) + ',' + getExprFromAttrVal(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl) + ',' + getExprFromAttrVal(bootTemplateUrl) + ');');
+														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, 5) + ',' + tools.toSource(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl, doodadPackageUrlIsExpr) + ',' + getExprFromAttrVal(bootTemplateUrl, bootTemplateUrlIsExpr) + ');');
 														state.modules = null;
 													};
 													const newState = (state.isHtml ? state : tools.extend(state, {isHtml: true}));
