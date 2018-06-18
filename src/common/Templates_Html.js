@@ -733,40 +733,58 @@ exports.add = function add(modules) {
 					},
 
 					toString: function toString(/*optional*/level, /*optional*/writeHeader) {
-						let code = '';
+						if (!this.codeParts || !this.codeParts.length) {
+							return '';
+						};
+
 						if (types.isNothing(level)) {
 							level = '';
 						};
-						const newLevel = level + '    ';
-						if (this.codeParts && this.codeParts.length) {
-							for (let i = 0; i < this.codeParts.length; i++) {
-								const part = this.codeParts[i];
-								if (types._instanceof(part, templatesHtml.DDI)) {
-									code += part.toString(newLevel);
-								};
-							};
-							for (let i = 0; i < this.codeParts.length; i++) {
-								const part = this.codeParts[i];
-								if (types._instanceof(part, templatesHtml.DDI)) {
-									code += '\n' + newLevel + __Internal__.surroundAsync('page.asyncInclude(' + part.name + ');');
-								} else {
-									code += '\n' + newLevel + part;
-								};
-							};
-							// TODO: .writeHeader and .writeFooter
-							return '\n' + level + (templatesHtml.useAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' +
-									(writeHeader ? '\n' + newLevel + 'const page = this;' : '') +
-									(writeHeader ? '\n' + newLevel + 'const pageType = types.getType(this);' : '') +
-									(writeHeader ? '\n' + newLevel + 'const locals = pageType.$getLocals();' : '') +
-									(writeHeader ? '\n' + newLevel + 'locals.page = page;' : '') +
-									(writeHeader ? '\n' + newLevel + 'const createEvalExpr = pageType.$getCreateEvalExpr(page, locals);' : '') +
-									(writeHeader ? '\n' + newLevel + 'let oldDynVars = null;' : '') +
 
-									'\n' + code +
-								'\n' + level + '}';
-						} else {
-							return '';
+						const newLevel = level + '    ';
+
+						let code = '\n' + level;
+
+						if (templatesHtml.useAsyncAwait()) {
+							code += 'async ';
 						};
+
+						code += 'function ' + this.name + '() {';
+
+						if (writeHeader) {
+							// TODO: .writeHeader
+							code += '\n' + newLevel + 'const page = this;' +
+								'\n' + newLevel + 'const pageType = types.getType(this);' +
+								'\n' + newLevel + 'const locals = pageType.$getLocals();' +
+								'\n' + newLevel + 'locals.page = page;' +
+								'\n' + newLevel + 'const createEvalExpr = pageType.$getCreateEvalExpr(page, locals);' +
+								'\n' + newLevel + 'const oldDynVars = null;';
+						};
+
+						for (let i = 0; i < this.codeParts.length; i++) {
+							const part = this.codeParts[i];
+							if (types._instanceof(part, templatesHtml.DDI)) {
+								code += part.toString(newLevel);
+							};
+						};
+
+						for (let i = 0; i < this.codeParts.length; i++) {
+							const part = this.codeParts[i];
+							if (types._instanceof(part, templatesHtml.DDI)) {
+								code += '\n' + newLevel + __Internal__.surroundAsync('page.asyncInclude(' + part.name + ');');
+							} else {
+								code += '\n' + newLevel + part;
+							};
+						};
+
+						// TODO: .writeFooter
+						//if (writeHeader) {
+						//	code += ...;
+						//};
+
+						code += '\n' + level + '}';
+
+						return code;
 					},
 				}
 			));
