@@ -122,6 +122,44 @@ exports.add = function add(modules) {
 
 					// <PRB> Because of async/await, the following must be all PUBLIC...
 
+					$getLocals: doodad.TYPE(doodad.PUBLIC(function $getLocals() {
+						return {
+							root,
+							doodad,
+							types,
+							tools,
+							Promise: types.getPromise(),
+						};
+					})),
+
+					$getCreateEvalExpr: doodad.TYPE(doodad.PUBLIC(function $getCreateEvalExpr(page, locals) {
+						return (function _createEvalExpr(dynVars) {
+							let evalFn = null;
+							const evalExpr = function _evalExpr(expr, /*optional*/refresh) {
+								if (evalExpr.forceRefresh) {
+									refresh = true;
+									evalExpr.forceRefresh = false;
+								};
+								if (refresh) {
+									evalFn = null;
+								};
+								let fn = evalFn;
+								if (!evalFn) {
+									const variables = tools.nullObject(page.options.variables, evalExpr.dynVars, locals);
+									fn = tools.createEval(types.keys(variables)).apply(null, types.values(variables));
+								};
+								const result = (expr ? fn(expr) : undefined);
+								if (!evalFn && !refresh) {
+									evalFn = fn;
+								};
+								return result;
+							};
+							evalExpr.dynVars = dynVars;
+							evalExpr.forceRefresh = false;
+							return evalExpr;
+						});
+					})),
+
 					compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
 					compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
 
@@ -190,60 +228,6 @@ exports.add = function add(modules) {
 					parents: null,
 					cache: true,
 					cacheDuration: 'P1D',
-
-					getScriptLocals: doodad.PROTECTED(function getScriptLocals() {
-						return {
-							root,
-							doodad,
-							types,
-							tools,
-							Promise: types.getPromise(),
-						};
-					}),
-
-					getScriptHeader: function getScriptHeader() {
-						/* eslint-disable */
-
-						// NOTE: Returns the header of the "renderTemplate" function
-						return (function() {
-							const page = locals.page = this;
-
-							const createEvalExpr = function _createEvalExpr(dynVars) {
-								let evalFn = null;
-								const evalExpr = function _evalExpr(expr, /*optional*/refresh) {
-									if (evalExpr.forceRefresh) {
-										refresh = true;
-										evalExpr.forceRefresh = false;
-									};
-									if (refresh) {
-										evalFn = null;
-									};
-									let fn = evalFn;
-									if (!evalFn) {
-										const variables = tools.nullObject(page.options.variables, evalExpr.dynVars, locals);
-										fn = tools.createEval(types.keys(variables)).apply(null, types.values(variables));
-									};
-									const result = (expr ? fn(expr) : undefined);
-									if (!evalFn && !refresh) {
-										evalFn = fn;
-									};
-									return result;
-								};
-								evalExpr.dynVars = dynVars;
-								evalExpr.forceRefresh = false;
-								return evalExpr;
-							};
-
-							const oldDynVars = null;
-						}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
-					},
-
-					getScriptFooter: function getScriptFooter() {
-						// NOTE: Returns the footer of the "renderTemplate" function
-						//return (function() {
-						//}).toString().match(/^[^{]*[{]((.|\n|\r)*)[}][^}]*$/)[1];
-						return "";
-					},
 
 					parse: function parse() {
 						/* eslint no-useless-concat: "off" */
@@ -330,8 +314,8 @@ exports.add = function add(modules) {
 								};
 
 								// Expressions
-								codeParts[codeParts.length] = "const dynVars = tools.nullObject(oldDynVars);"
-								codeParts[codeParts.length] = "const evalExpr = createEvalExpr(dynVars);"
+								codeParts[codeParts.length] = "const dynVars = tools.nullObject(oldDynVars);";
+								codeParts[codeParts.length] = "const evalExpr = createEvalExpr(dynVars);";
 							};
 
 							const startFn = function _startFn(...argNames) {
@@ -715,33 +699,33 @@ exports.add = function add(modules) {
 						const Promise = types.getPromise();
 
 						return Promise.try(function() {
-								if (this.doc) {
-									// Already opened.
-									return undefined;
-								};
-								const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
-								return files.openFile(this.path, {encoding: encoding})
-									.then(function openFilePromise(stream) {
-										let promise = Promise.resolve(null);
-										const loader = templatesHtml.getResourcesLoader();
-										if (xml.isAvailable({schemas: true})) {
-											promise = loader.locate('./common/res/schemas/');
+							if (this.doc) {
+								// Already opened.
+								return undefined;
+							};
+							const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
+							return files.openFile(this.path, {encoding: encoding})
+								.then(function openFilePromise(stream) {
+									let promise = Promise.resolve(null);
+									const loader = templatesHtml.getResourcesLoader();
+									if (xml.isAvailable({schemas: true})) {
+										promise = loader.locate('./common/res/schemas/');
+									};
+									promise = promise.then(function(xsdRoot) {
+										let xsd = null;
+										if (xsdRoot) {
+											xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
 										};
-										promise = promise.then(function(xsdRoot) {
-											let xsd = null;
-											if (xsdRoot) {
-												xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
-											};
-											return xml.parse(stream, {entities: html.getEntities(), discardEntities: true, xsd: xsd});
-										}, null, this);
-										return promise
-											.then(function parseXmlPromise(doc) {
-												types.DESTROY(stream);
-		//console.log(require('util').inspect(doc));
-												this.doc = doc;
-											}, null, this);
+										return xml.parse(stream, {entities: html.getEntities(), discardEntities: true, xsd: xsd});
 									}, null, this);
-							}, this)
+									return promise
+										.then(function parseXmlPromise(doc) {
+											types.DESTROY(stream);
+											//console.log(require('util').inspect(doc));
+											this.doc = doc;
+										}, null, this);
+								}, null, this);
+						}, this)
 							.then(function(dummy) {
 								this.codeParts = [];
 								return this.parse();
@@ -769,12 +753,17 @@ exports.add = function add(modules) {
 									code += '\n' + newLevel + part;
 								};
 							};
-							return level + (templatesHtml.useAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' +
-										'\n' + newLevel +
-										(writeHeader && this.getScriptHeader() || '') +
-										'\n' + code +
-										(writeHeader && this.getScriptFooter() || '') +
-									'\n' + level + '}\n';
+							// TODO: .writeHeader and .writeFooter
+							return '\n' + level + (templatesHtml.useAsyncAwait() ? 'async ' : '') + 'function ' + this.name + '() {' +
+									(writeHeader ? '\n' + newLevel + 'const page = this;' : '') +
+									(writeHeader ? '\n' + newLevel + 'const pageType = types.getType(this);' : '') +
+									(writeHeader ? '\n' + newLevel + 'const locals = pageType.$getLocals();' : '') +
+									(writeHeader ? '\n' + newLevel + 'locals.page = page;' : '') +
+									(writeHeader ? '\n' + newLevel + 'const createEvalExpr = pageType.$getCreateEvalExpr(page, locals);' : '') +
+									(writeHeader ? '\n' + newLevel + 'let oldDynVars = null;' : '') +
+
+									'\n' + code +
+								'\n' + level + '}';
 						} else {
 							return '';
 						};
@@ -809,44 +798,46 @@ exports.add = function add(modules) {
 								};
 
 								return Promise.try(function() {
-										const type = namespaces.get(name);
-										if (!type) {
-											return modules.load([
-													{
-														path: this.path.set({extension: (root.getOptions().fromSource ? 'js' : 'min.js')}),
-													},
-												], {startup: {secret: _shared.SECRET}})
-												.then(function(dummy) {
-													return namespaces.get(name);
-												});
-										};
-										return type;
-									}, this)
+									const type = namespaces.get(name);
+									if (!type) {
+										return modules.load(
+											[
+												{
+													path: this.path.set({extension: (root.getOptions().fromSource ? 'js' : 'min.js')}),
+												},
+											], {startup: {secret: _shared.SECRET}})
+											.then(function(dummy) {
+												return namespaces.get(name);
+											});
+									};
+									return type;
+								}, this)
 									.then(function(type) {
 										if (!types._implements(type, templatesHtml.PageTemplate)) {
 											throw new types.ValueError("Unknown page template '~0~'.", [name]);
 										};
 
 										const code = this.toString('', true);
-							//console.log(code);
-										const locals = this.getScriptLocals();
+										//console.log(code);
+										const locals = type.$getLocals();
 										let fn = tools.createEval(types.keys(locals));
 										fn = fn.apply(null, types.values(locals));
-										fn = fn('(function(locals) {return (' + code + ');})')(locals);
-							//console.log(fn);
+										fn = fn('(' + code + ')');
+										//console.log(fn);
 
 										templ = templatesDDTX.REGISTER(/*protect*/false, /*args*/null, /*type*/type.$extend(
-										{
-											$TYPE_NAME: templName,
+											{
+												$TYPE_NAME: templName,
 
-											$options: {
-												cache: this.cache,
-												cacheDuration: this.cacheDuration,
-												encoding: this.options.encoding,
-											},
+												$options: {
+													cache: this.cache,
+													cacheDuration: this.cacheDuration,
+													encoding: this.options.encoding,
+												},
 
-											renderTemplate: doodad.OVERRIDE(fn),
-										}));
+												renderTemplate: doodad.OVERRIDE(fn),
+											})
+										);
 
 										let listener;
 										this.addEventListener('unload', listener = function(ev) {
@@ -880,19 +871,19 @@ exports.add = function add(modules) {
 					const loadFile = function loadFile(path) {
 						if (path.extension === 'ddtx') {
 							return Promise.all([
-									Promise.create(function(resolve, reject) {
-										templatesDDTX.addEventListener('newDDTX', function(ev) {
-											if (ev.detail.id === key) {
-												if (ev.detail.error) {
-													reject(ev.detail.error);
-												} else {
-													resolve(ev.detail.ddtx);
-												};
+								Promise.create(function(resolve, reject) {
+									templatesDDTX.addEventListener('newDDTX', function(ev) {
+										if (ev.detail.id === key) {
+											if (ev.detail.error) {
+												reject(ev.detail.error);
+											} else {
+												resolve(ev.detail.ddtx);
 											};
-										});
-									}),
-									modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, global: {ddtxId: key}}),
-								])
+										};
+									});
+								}),
+								modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, global: {ddtxId: key}}),
+							])
 								.then(function(results) {
 									const ddtx = results[0];
 									return ddtx;
