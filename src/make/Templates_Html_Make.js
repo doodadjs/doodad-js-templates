@@ -122,7 +122,7 @@ exports.add = function add(modules) {
 									runDirectives: true,
 									variables: variables,
 								};
-							}, this);
+							}, null, this);
 					}),
 				}));
 
