@@ -25,15 +25,10 @@
 (function() {
 	"use strict";
 
-	var	__prevOnLoad__ = window.onload;
-	window.onload = function windowOnLoad(ev) {
-		if (__prevOnLoad__) {
-			__prevOnLoad__.call(this, ev);
-		};
-
+	window.addEventListener('load', function windowOnLoad(ev) {
 		const global = window;
 
-		const SECRET = ((typeof Symbol === 'function') ? Symbol() : []);
+		const SECRET = Symbol();
 
 		const options = /*! INJECT(TO_SOURCE(VAR("options"), 15)) */;
 
@@ -61,9 +56,7 @@
 					//! END_MAP()
 				];
 
-				//! IF(VAR("startups"))
-					const safeEval = tools.SafeEval;
-
+				//! IF(VAR("startups") && VAR("startups").length)
 					toLoad.push(
 						{
 							module: '@doodad-js/safeeval',
@@ -76,7 +69,7 @@
 							root.addEventListener('start', listener = function(ev) {
 								root.removeEventListener('start', listener);
 								const expr = /*! INJECT(TO_SOURCE(VAR("expr"))) */;
-								safeEval.eval(expr, {root: root});
+								tools.SafeEval.eval(expr, {root: root});
 							});
 						})();
 					//! END_FOR()
@@ -101,5 +94,5 @@
 					//throw err;
 				};
 			});
-	};
+	});
 })();
