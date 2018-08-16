@@ -274,6 +274,8 @@ exports.add = function add(modules) {
 												.then(function(varsId) {
 													const bootUrlVars = bootResolved.url.setArgs({vars: varsId});
 
+													// TODO: invalidate "bootUrlVars" on "varsId" expiration
+
 													return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadResolved.url) : Promise.resolve(null))
 														.then(function(integrity) {
 															return this.writeAsync('<script async src="' + doodadResolved.url.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
@@ -402,10 +404,10 @@ exports.add = function add(modules) {
 																		.then(function() {
 																			const hash = io.TextData.$decode(buf, 'ascii');
 																			return hash;
-																		});
+																		}, null, this);
 																	cacheStream.flush({purge: true});
 																	return promise;
-																});
+																}, null, this);
 														} else {
 															return start.call(this); // cache file has been deleted
 														};
@@ -429,7 +431,7 @@ exports.add = function add(modules) {
 																								return cacheStream.flushAsync({purge: true});
 																							};
 																							return undefined;
-																						});
+																						}, null, this);
 																				} else {
 																					return cacheStream.writeAsync(io.EOF);
 																				};
@@ -507,7 +509,6 @@ exports.add = function add(modules) {
 									return this.writeAsync(' ' + tools.escapeHtml(types.toString(name), true) + '="' + tools.escapeHtml(types.toString(value), false) + '"');
 								}, null, this);
 						}, {thisObj: this});
-						//.catch(err => {console.error(err); throw err});
 					}),
 				})));
 
