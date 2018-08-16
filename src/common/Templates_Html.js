@@ -239,7 +239,7 @@ exports.add = function add(modules) {
 							const DDT_URI = "http://www.doodad-js.local/schemas/ddt";
 							const HTML_URI = "http://www.doodad-js.local/schemas/html5";
 
-							const DEFAULT_DOODAD_PKG_URL = '?res=@doodad-js/core/package.min.js';
+							const DEFAULT_DOODAD_PKG_URL = '?res=@doodad-js/core/core.min.js';
 							const DEFAULT_BOOT_TEMPL_URL = '?res=@doodad-js/templates/Boot.min.js';
 
 							const RESERVED_OBJ_PROPS = ['__proto__', 'toString', 'toValue', 'toJSON', 'toSource'];
@@ -706,10 +706,12 @@ exports.add = function add(modules) {
 							const encoding = types.getDefault(this.options, 'encoding', 'utf-8');
 							return files.openFile(this.path, {encoding: encoding})
 								.then(function openFilePromise(stream) {
-									let promise = Promise.resolve(null);
+									let promise;
 									const loader = templatesHtml.getResourcesLoader();
 									if (xml.isAvailable({schemas: true})) {
 										promise = loader.locate('./common/res/schemas/');
+									} else {
+										promise = Promise.resolve(null);
 									};
 									promise = promise.then(function(xsdRoot) {
 										let xsd = null;
@@ -905,13 +907,13 @@ exports.add = function add(modules) {
 								.then(function(results) {
 									const ddtx = results[0];
 									return ddtx;
-								});
+								}, null, this);
 						} else {
 							return modules.locate(module, path)
 								.then(function(resolvedPath) {
 									const ddt = templatesHtml.DDT.$get(resolvedPath, options);
 									return ddt.build();
-								});
+								}, null, this);
 						};
 					};
 
