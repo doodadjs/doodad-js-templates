@@ -253,7 +253,6 @@ exports.add = function add(modules) {
 								self = this,
 								codeParts = self.codeParts;
 
-
 							const getAttrValue = function _getAttrValue(attrs, name, type, defaultValue, exprIsValid) {
 								const result = attrs.find(name);
 								let isExpr = false;
@@ -718,14 +717,17 @@ exports.add = function add(modules) {
 										if (xsdRoot) {
 											xsd = xsdRoot.combine(files.parsePath(this.type === 'ddt' ? "./ddt/ddt.xsd" : "./ddt/ddi.xsd"), {includePathInRoot: true});
 										};
-										return xml.parse(stream, {entities: html.getEntities(), discardEntities: true, xsd: xsd});
+										return xml.parse(stream, {entities: html.getEntities(), discardEntities: true, xsd});
 									}, null, this);
 									return promise
-										.then(function parseXmlPromise(doc) {
+										.nodeify(function parseXmlPromise(err, doc) {
 											types.DESTROY(stream);
+											if (err) {
+												throw err;
+											};
 											//console.log(require('util').inspect(doc));
 											this.doc = doc;
-										}, null, this);
+										}, this);
 								}, null, this);
 						}, this)
 							.then(function(dummy) {
