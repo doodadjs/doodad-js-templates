@@ -904,6 +904,7 @@ exports.add = function add(modules) {
 										};
 									});
 								}),
+								// TODO: Find another way than a "global" option key ?
 								modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, global: {ddtxId: key}}),
 							])
 								.then(function(results) {
