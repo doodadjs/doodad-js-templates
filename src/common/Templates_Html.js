@@ -904,8 +904,7 @@ exports.add = function add(modules) {
 										};
 									});
 								}),
-								// TODO: Find another way than a "global" option key ?
-								modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, global: {ddtxId: key}}),
+								modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, "Doodad.Templates.Html.DDTX": {ddtxId: key}}),
 							])
 								.then(function(results) {
 									const ddtx = results[0];
