@@ -56,6 +56,7 @@ exports.add = function add(modules) {
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
+				modules = doodad.Modules,
 				//nodejs = doodad.NodeJs,
 				//files = tools.Files,
 				make = root.Make,
@@ -101,28 +102,37 @@ exports.add = function add(modules) {
 							tools.log(tools.LogLevels.Warning, "*** Warning *** : XML validation by XSD schemas is not available. Please set the 'NODE_ENV' environment variable to 'development' to enable 'libxml2'.");
 						};
 
-						const ddt = templatesHtml.DDT.$get(source, options);
+						let promise;
+						if (xml.isAvailable({messages: true})) {
+							promise = Promise.resolve();
+						} else {
+							promise = modules.load([{module: '@doodad-js/xml', path: "src/common/Tools_Xml_Parsers_Libxml2_Errors.js"}]);
+						};
 
-						return ddt.open()
-							.then(function(dummy) {
-								const ddtType = ddt.doc.getRoot().getAttr('type');
+						return promise.then(function thenCompileDdt() {
+							const ddt = templatesHtml.DDT.$get(source, options);
 
-								const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
-									ddtType: ddtType,
-									cacheEnabled: ddt.cache,
-									cacheDuration: ddt.cacheDuration,
-									encoding: ddt.options.encoding,
-									renderTemplateBody: ddt.toString('', true),
-								});
+							return ddt.open()
+								.then(function(dummy) {
+									const ddtType = ddt.doc.getRoot().getAttr('type');
 
-								return {
-									'class': file.Javascript,
-									source: '~@doodad-js/templates/src/make/res/ddtx.templ.js',
-									destination: dest,
-									runDirectives: true,
-									variables: variables,
-								};
-							}, null, this);
+									const variables = tools.extend({}, types.get(item, 'variables'), types.get(options, 'variables'), {
+										ddtType: ddtType,
+										cacheEnabled: ddt.cache,
+										cacheDuration: ddt.cacheDuration,
+										encoding: ddt.options.encoding,
+										renderTemplateBody: ddt.toString('', true),
+									});
+
+									return {
+										'class': file.Javascript,
+										source: '~@doodad-js/templates/src/make/res/ddtx.templ.js',
+										destination: dest,
+										runDirectives: true,
+										variables: variables,
+									};
+								}, null, this);
+						});
 					}),
 				}));
 
