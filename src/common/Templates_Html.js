@@ -65,6 +65,8 @@ exports.add = function add(modules) {
 			const __Internal__ = {
 				templatesCached: tools.nullObject(),
 				ddtxCache: tools.nullObject(),
+
+				clientScripts: new types.Map(),
 			};
 
 
@@ -96,6 +98,25 @@ exports.add = function add(modules) {
 				return false;
 			}));
 
+			//===================================
+			// registerClientScript
+			//===================================
+
+			templatesHtml.ADD('registerClientScript', function registerClientScript(src, async) {
+				let url;
+				if (types._instanceof(src, files.Url)) {
+					url = src;
+					src = src.toApiString();
+				} else {
+					url = files.parseUrl(src);
+				};
+				__Internal__.clientScripts.set(src, {url, async});
+			});
+
+			templatesHtml.ADD('unregisterClientScript', function unregisterClientScript(src) {
+				src = types.toString(src);
+				__Internal__.clientScripts.delete(src);
+			});
 
 			//===================================
 			// TemplateBase
@@ -542,7 +563,8 @@ exports.add = function add(modules) {
 										} else if ((ns === HTML_URI) || ((ns === DDT_URI) && (name === 'html'))) {
 											if (!state.isIf && !state.isModules) {
 												let addCharset = false,
-													addModules = false;
+													addModules = false,
+													addClientScripts = false;
 												if (name === 'head') {
 													// TODO: Replace by an XPATH search when they will be available in @doodad-js/xml.
 													const metaNodes = child.getChildren().find('meta');
@@ -557,6 +579,7 @@ exports.add = function add(modules) {
 													};
 												} else if (name === 'body') {
 													addModules = !!state.modules;
+													addClientScripts = (__Internal__.clientScripts.size > 0);
 												};
 												state.html += '<' + name;
 												const ignoreAttrs = ['async'];
@@ -605,12 +628,25 @@ exports.add = function add(modules) {
 												};
 												const children = child.getChildren();
 												// <PRB> Browsers do not well support "<name />"
-												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'track'], name) < 0);
-												const hasChildren = addCharset || !!children.getCount() || mandatoryContent;
+												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'script', 'track'], name) < 0);
+												const hasChildren = addCharset || addClientScripts || addModules || !!children.getCount() || mandatoryContent;
 												if (hasChildren) {
 													state.html += '>';
 													if (addCharset) {
 														state.html += '<meta charset="UTF-8"/>';
+													};
+													if (addClientScripts) {
+														__Internal__.clientScripts.forEach(function(value, key, map) {
+															state.html += '<script ';
+															if (value.async) {
+																state.html += 'async ';
+															};
+															writeHTML(state);
+															writeAsyncWrites(state);
+															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri + ' + tools.toSource(key), false) + ');');
+															codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
+															state.html += '></script>';
+														});
 													};
 													if (addModules) {
 														writeHTML(state);
