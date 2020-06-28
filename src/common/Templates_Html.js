@@ -401,6 +401,33 @@ exports.add = function add(modules) {
 								}, '').slice(1) + '}';
 							};
 
+							const insertCharset = function _insertCharset(state) {
+								state.html += '<meta charset="UTF-8"/>';
+							};
+
+							const insertClientScripts = function _insertClientScripts(state) {
+								__Internal__.clientScripts.forEach(function(value, key, map) {
+									state.html += '<script ';
+									if (value.async) {
+										state.html += 'async ';
+									};
+									writeHTML(state);
+									writeAsyncWrites(state);
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri + ' + tools.toSource(key), false) + ');');
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
+									state.html += '></script>';
+								});
+							};
+
+							const insertModules = function _insertModules(state) {
+								if (state.modules) {
+									writeHTML(state);
+									writeAsyncWrites(state);
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, 5) + ',' + tools.toSource(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl, doodadPackageUrlIsExpr) + ',' + getExprFromAttrVal(bootTemplateUrl, bootTemplateUrlIsExpr) + ');');
+									state.modules = null;
+								};
+							};
+
 
 							// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
 							// TODO: SafeEval on expressions
@@ -415,8 +442,10 @@ exports.add = function add(modules) {
 
 										if (ns === DDI_URI) {
 											if (name === 'body') {
-												const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
-												parseNode(child, newState);
+												const isHtml = state.isHtml;
+												state.isHtml = false;
+												parseNode(child, state);
+												state.isHtml = isHtml;
 											};
 										} else if ((ns === DDT_URI) && (name !== 'html')) {
 											writeHTML(state);
@@ -431,10 +460,15 @@ exports.add = function add(modules) {
 													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr'), false) + ';');
 												};
 												codeParts[codeParts.length] = 'if (__expr__) {';
-												const newState = tools.extend(state, {isHtml: false, isIf: false});
-												parseNode(child, newState);
-												writeHTML(newState);
-												writeAsyncWrites(newState);
+												const isHtml = state.isHtml;
+												const isIf = state.isIf;
+												state.isHtml = false;
+												state.isIf = false;
+												parseNode(child, state);
+												state.isHtml = isHtml;
+												state.isIf = isIf;
+												writeHTML(state);
+												writeAsyncWrites(state);
 												codeParts[codeParts.length] = '};';
 											} else if (!state.isModules && (name === 'when-false')) {
 												if (!state.isIf) {
@@ -446,10 +480,15 @@ exports.add = function add(modules) {
 													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr', false)) + ';');
 												};
 												codeParts[codeParts.length] = 'if (!__expr__) {';
-												const newState = tools.extend(state, {isHtml: false, isIf: false});
-												parseNode(child, newState);
-												writeHTML(newState);
-												writeAsyncWrites(newState);
+												const isHtml = state.isHtml;
+												const isIf = state.isIf;
+												state.isHtml = false;
+												state.isIf = false;
+												parseNode(child, state);
+												state.isHtml = isHtml;
+												state.isIf = isIf;
+												writeHTML(state);
+												writeAsyncWrites(state);
 												codeParts[codeParts.length] = '};';
 											} else if (!state.isIf) {
 												if (!state.isModules && (name === 'if')) {
@@ -459,10 +498,15 @@ exports.add = function add(modules) {
 														startFn();
 													};
 													codeParts[codeParts.length] = ('const __expr__ = !!' + prepareExpr(child.getAttr('expr'), false) + ';');
-													const newState = tools.extend(state, {isHtml: false, isIf: true});
-													parseNode(child, newState);
-													writeHTML(newState);
-													writeAsyncWrites(newState);
+													const isHtml = state.isHtml;
+													const isIf = state.isIf;
+													state.isHtml = false;
+													state.isIf = true;
+													parseNode(child, state);
+													state.isHtml = isHtml;
+													state.isIf = isIf;
+													writeHTML(state);
+													writeAsyncWrites(state);
 												} else if (!state.isModules && (name === 'script')) {
 													const vars = (child.getAttr('vars') || '').split(' ').filter(function filterVar(v) { return !!v; });
 													if (vars.length) {
@@ -474,8 +518,10 @@ exports.add = function add(modules) {
 													startFn('item');
 													codeParts[codeParts.length] = 'dynVars[' + tools.toSource(child.getAttr('item') || 'item') + '] = item;';
 													codeParts[codeParts.length] = 'evalExpr.forceRefresh = true;';
-													const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
-													parseNode(child, newState);
+													const isHtml = state.isHtml;
+													state.isHtml = false;
+													parseNode(child, state);
+													state.isHtml = isHtml;
 													writeHTML(state);
 													writeAsyncWrites(state);
 													endFn();
@@ -501,8 +547,10 @@ exports.add = function add(modules) {
 													const duration = child.getAttr("duration") || cacheDuration;
 													codeParts[codeParts.length] = startAsync('page.asyncCache(' + tools.toSource(state.cacheId) + ', ' + tools.toSource(duration) + ', ');
 													startFn();
-													const newState = (state.isHtml ? tools.extend(state, {isHtml: false}) : state);
-													parseNode(child, newState);
+													const isHtml = state.isHtml;
+													state.isHtml = false;
+													parseNode(child, state);
+													state.isHtml = isHtml;
 													writeHTML(state);
 													writeAsyncWrites(state);
 													endFn();
@@ -577,9 +625,17 @@ exports.add = function add(modules) {
 															break;
 														};
 													};
+													state.hasHead = true;
 												} else if (name === 'body') {
+													if (!state.hasHead) {
+														state.html += '<head>';
+														insertCharset(state);
+														state.html += '</head>';
+														state.hasHead = true;
+													};
 													addModules = !!state.modules;
 													addClientScripts = (__Internal__.clientScripts.size > 0);
+													state.hasBody = true;
 												};
 												state.html += '<' + name;
 												const ignoreAttrs = ['async'];
@@ -628,34 +684,38 @@ exports.add = function add(modules) {
 												};
 												const children = child.getChildren();
 												// <PRB> Browsers do not well support "<name />"
-												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'head', 'hr', 'img', 'input', 'link', 'param', 'script', 'track'], name) < 0);
-												const hasChildren = addCharset || addClientScripts || addModules || !!children.getCount() || mandatoryContent;
+												const mandatoryContent = (tools.indexOf(['area', 'base', 'br', 'col', 'hr', 'img', 'input', 'link', 'param', 'track'], name) < 0);
+												const hasChildren = mandatoryContent || addCharset || addClientScripts || addModules || (children.getCount() > 0);
 												if (hasChildren) {
 													state.html += '>';
 													if (addCharset) {
-														state.html += '<meta charset="UTF-8"/>';
+														insertCharset(state);
 													};
 													if (addClientScripts) {
-														__Internal__.clientScripts.forEach(function(value, key, map) {
-															state.html += '<script ';
-															if (value.async) {
-																state.html += 'async ';
-															};
-															writeHTML(state);
-															writeAsyncWrites(state);
-															codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri + ' + tools.toSource(key), false) + ');');
-															codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
-															state.html += '></script>';
-														});
+														insertClientScripts(state);
 													};
 													if (addModules) {
-														writeHTML(state);
-														writeAsyncWrites(state);
-														codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, 5) + ',' + tools.toSource(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl, doodadPackageUrlIsExpr) + ',' + getExprFromAttrVal(bootTemplateUrl, bootTemplateUrlIsExpr) + ');');
-														state.modules = null;
+														insertModules(state);
 													};
-													const newState = (state.isHtml ? state : tools.extend(state, {isHtml: true}));
-													parseNode(child, newState);
+													const isHtml = state.isHtml;
+													state.isHtml = true;
+													parseNode(child, state);
+													state.isHtml = isHtml;
+													if (name === 'html') {
+														if (!state.hasHead) {
+															state.html += '<head>';
+															insertCharset(state);
+															state.html += '</head>';
+															state.hasHead = true;
+														};
+														if (!state.hasBody) {
+															state.html += '<body>';
+															insertClientScripts(state);
+															insertModules(state);
+															state.html += '</body>';
+															state.hasBody = true;
+														};
+													};
 													state.html += '</' + name + '>';
 												} else {
 													state.html += '/>';
@@ -687,6 +747,8 @@ exports.add = function add(modules) {
 								cacheId: null,
 								modules: null,
 								options: tools.nullObject(),
+								hasHead: false,
+								hasBody: false,
 							};
 
 
