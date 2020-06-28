@@ -414,6 +414,9 @@ exports.add = function add(modules) {
 									writeHTML(state);
 									writeAsyncWrites(state);
 									codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri + ' + tools.toSource(key), false) + ');');
+									if (defaultIntegrity) {
+										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(defaultIntegrity) + ', "src");');
+									};
 									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 									state.html += '></script>';
 								});
