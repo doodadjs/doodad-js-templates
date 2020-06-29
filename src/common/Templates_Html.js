@@ -420,7 +420,7 @@ exports.add = function add(modules) {
 							const insertClientScripts = function _insertClientScripts(state) {
 								const clientScripts = new types.Map();
 								tools.forEach(state.buildFiles, function (file, key, ar) {
-									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
+									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module || '');
 									if (moduleScripts) {
 										const scripts = moduleScripts.get(file.path || '');
 										if (scripts) {
@@ -498,10 +498,10 @@ exports.add = function add(modules) {
 											return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
 												if (__Internal__.clientScripts) {
 													if (!err) {
-														let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
+														let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module || '');
 														if (!moduleScripts) {
 															moduleScripts = new types.Map();
-															__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
+															__Internal__.clientScriptsPerModule.set(file.module || '', moduleScripts);
 														}
 														moduleScripts.set(file.path || '', __Internal__.clientScripts);
 													};
