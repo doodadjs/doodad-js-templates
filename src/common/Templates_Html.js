@@ -66,7 +66,8 @@ exports.add = function add(modules) {
 				templatesCached: tools.nullObject(),
 				ddtxCache: tools.nullObject(),
 
-				clientScripts: new types.Map(),
+				clientScripts: null,  // <FUTURE> Global to thread
+				clientScriptsPerModule: new types.Map() // <FUTURE> Shared between threads
 			};
 
 
@@ -103,6 +104,9 @@ exports.add = function add(modules) {
 			//===================================
 
 			templatesHtml.ADD('registerClientScript', function registerClientScript(src, async) {
+				if (!__Internal__.clientScripts) {
+					__Internal__.clientScripts = new types.Map();
+				}
 				let url;
 				if (types._instanceof(src, files.Url)) {
 					url = src;
@@ -115,7 +119,15 @@ exports.add = function add(modules) {
 
 			templatesHtml.ADD('unregisterClientScript', function unregisterClientScript(src) {
 				src = types.toString(src);
-				__Internal__.clientScripts.delete(src);
+				if (__Internal__.clientScripts) {
+					__Internal__.clientScripts.delete(src);
+				};
+				// TODO: Delete just for current parsed DDT
+				//__Internal__.clientScriptsPerModule.forEach(function(val, key, map) {
+				//	val.forEach(function(val2, key2, map2) {
+				//		val2.delete(src);
+				//	});
+				//});
 			});
 
 			//===================================
@@ -388,7 +400,7 @@ exports.add = function add(modules) {
 							};
 
 							const getExprFromAttrVal = function _getExprFromAttrVal(attrVal, isExpr) {
-								return (isExpr ? prepareExpr(attrVal, false) : tools.toSource(attrVal));
+								return (isExpr ? 'types.toString(' + prepareExpr(attrVal, false) + ')' : tools.toSource(attrVal));
 							};
 
 							const reduceStateOptions = function _reduceStateOptions(options) {
@@ -406,14 +418,26 @@ exports.add = function add(modules) {
 							};
 
 							const insertClientScripts = function _insertClientScripts(state) {
-								__Internal__.clientScripts.forEach(function(value, key, map) {
-									state.html += '<script ';
-									if (value.async) {
-										state.html += 'async ';
+								const clientScripts = new types.Map();
+								tools.forEach(state.buildFiles, function (file, key, ar) {
+									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
+									if (moduleScripts) {
+										const scripts = moduleScripts.get(file.path || '');
+										if (scripts) {
+											scripts.forEach(function(script, src, map) {
+												clientScripts.set(src, script);
+											});
+										};
+									};
+								});
+								clientScripts.forEach(function(script, src, map) {
+									state.html += '<script';
+									if (script.async) {
+										state.html += ' async';
 									};
 									writeHTML(state);
 									writeAsyncWrites(state);
-									codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri + ' + tools.toSource(key), false) + ');');
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri.combine(' + tools.toSource(types.toString(src)) + ')', false) + ');');
 									if (defaultIntegrity) {
 										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(defaultIntegrity) + ', "src");');
 									};
@@ -434,6 +458,68 @@ exports.add = function add(modules) {
 
 							// TODO: Possible stack overflow ("parseNode" is recursive) : Rewrite in a while loop ?
 							// TODO: SafeEval on expressions
+
+							const preParse = function _preParse(node, state) {
+								return Promise.try(function tryPreParse() {
+									const promises = [];
+									const files = [];
+									if (!state) {
+										state = {
+											isModules: false,
+											buildFiles: [],
+										};
+									};
+									node.getChildren().forEach(function forEachChild(child, pos, ar) {
+										if (types._instanceof(child, xml.Element)) {
+											const name = child.getName(),
+												ns = child.getBaseURI();
+
+											if (ns === DDT_URI) {
+												if (!state.isModules && (name === 'modules')) {
+													const isModules = state.isModules;
+													state.isModules = true;
+													promises.push(preParse(child, state));
+													state.isModules = isModules;
+												} else if (state.isModules && (name === 'load')) {
+													if (types.toBoolean(child.getAttr("build"))) {
+														const file = {
+															module: child.getAttr("module"),
+															path: child.getAttr("path"),
+															optional: types.toBoolean(child.getAttr("optional")),
+															//isConfig:
+														};
+														files.push(file);
+														state.buildFiles.push(file);
+													};
+												};
+											};
+										};
+									});
+									if (files.length > 0) {
+										promises.push(Promise.map(files, function(file) {
+											return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
+												if (__Internal__.clientScripts) {
+													if (!err) {
+														let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
+														if (!moduleScripts) {
+															moduleScripts = new types.Map();
+															__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
+														}
+														moduleScripts.set(file.path || '', __Internal__.clientScripts);
+													};
+													__Internal__.clientScripts = null;
+												};
+												if (err) {
+													throw err;
+												};
+											});
+										}, {concurrency: 1}));
+									};
+									return Promise.all(promises).then(function() {
+										return state.buildFiles;
+									});
+								});
+							};
 
 							const parseNode = function _parseNode(node, state) {
 								let hasVariables = false;
@@ -603,12 +689,14 @@ exports.add = function add(modules) {
 														throw new types.ParseError("Invalid value for the 'module' attribute in an 'option' element.");
 													};
 												} else if (state.isModules && !state.isOptions && state.modules && (name === 'load')) {
-													state.modules.push({
-														module: child.getAttr("module") || null,
-														path: child.getAttr("path") || null,
-														optional: types.toBoolean(child.getAttr("optional") || false),
-														integrity: child.getAttr("integrity") || defaultIntegrity || null,
-													});
+													if (!types.toBoolean(child.getAttr("build"))) {
+														state.modules.push({
+															module: child.getAttr("module") || null,
+															path: child.getAttr("path") || null,
+															optional: types.toBoolean(child.getAttr("optional") || false),
+															integrity: child.getAttr("integrity") || defaultIntegrity || null,
+														});
+													};
 												};
 											};
 										} else if ((ns === HTML_URI) || ((ns === DDT_URI) && (name === 'html'))) {
@@ -637,7 +725,7 @@ exports.add = function add(modules) {
 														state.hasHead = true;
 													};
 													addModules = !!state.modules;
-													addClientScripts = (__Internal__.clientScripts.size > 0);
+													addClientScripts = true;
 													state.hasBody = true;
 												};
 												state.html += '<' + name;
@@ -739,50 +827,53 @@ exports.add = function add(modules) {
 							};
 
 
-							const state = {
-								html: '',
-								writes: '',
-								isIf: false,
-								isModules: false,
-								isOptions: false,
-								isHtml: false,
-								promises: [],
-								cacheId: null,
-								modules: null,
-								options: tools.nullObject(),
-								hasHead: false,
-								hasBody: false,
-							};
-
-
-							fnHeader();
-
-							if (this.type === 'ddt') {
-								// TODO: Replace by XPATH search when it will be available in @doodad-js/xml.
-								const doctypeNodes = ddi.getChildren().find('doctype')
-									.filter(function(doctypeNode) {
-										return doctypeNode.getBaseURI() === DDT_URI;
-									});
-								if (doctypeNodes.length) {
-									const valueNodes = doctypeNodes.getAt(0).getChildren();
-									state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n';
-								} else {
-									state.html += '<!DOCTYPE html>\n';
+							return preParse(ddi).then(function mainParse(buildFiles) {
+								const state = {
+									html: '',
+									writes: '',
+									isIf: false,
+									isModules: false,
+									isOptions: false,
+									isHtml: false,
+									promises: [],
+									cacheId: null,
+									modules: null,
+									options: tools.nullObject(),
+									hasHead: false,
+									hasBody: false,
+									buildFiles,
 								};
+
+								fnHeader();
+
+								if (this.type === 'ddt') {
+									// TODO: Replace by XPATH search when it will be available in @doodad-js/xml.
+									const doctypeNodes = ddi.getChildren().find('doctype')
+										.filter(function(doctypeNode) {
+											return doctypeNode.getBaseURI() === DDT_URI;
+										});
+									if (doctypeNodes.length) {
+										const valueNodes = doctypeNodes.getAt(0).getChildren();
+										state.html += '<!DOCTYPE ' + (valueNodes.getCount() && valueNodes.getAt(0).getValue() || 'html') + '>\n';
+									} else {
+										state.html += '<!DOCTYPE html>\n';
+									};
+									writeHTML(state);
+								};
+
+								parseNode(ddi, state);
 								writeHTML(state);
-							};
+								writeAsyncWrites(state);
 
-							parseNode(ddi, state);
-							writeHTML(state);
-							writeAsyncWrites(state);
-							fnFooter();
+								fnFooter();
 
 
-							self.cache = cache;
-							self.cacheDuration = cacheDuration;
+								self.cache = cache;
+								self.cacheDuration = cacheDuration;
 
 
-							return Promise.all(state.promises);
+								return Promise.all(state.promises);
+							}, this);
 						}, this);
 					},
 
@@ -862,6 +953,7 @@ exports.add = function add(modules) {
 								'\n' + newLevel + 'const pageType = types.getType(this);' +
 								'\n' + newLevel + 'const locals = pageType.$getLocals();' +
 								'\n' + newLevel + 'locals.page = page;' +
+								'\n' + newLevel + "locals.modulesUri = locals.tools.Files.parseUrl(page.options.variables.modulesUri || '/');" +
 								'\n' + newLevel + 'const createEvalExpr = pageType.$getCreateEvalExpr(page, locals);' +
 								'\n' + newLevel + 'const oldDynVars = null;';
 						};

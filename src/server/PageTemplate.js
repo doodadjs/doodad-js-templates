@@ -488,6 +488,7 @@ exports.add = function add(modules) {
 							compiledAttrs = tools.nullObject();
 							this.__compiledAttrs = compiledAttrs;
 						};
+						value = types.toString(value);
 						compiledAttrs[key] = function() {
 							return value;
 						};
