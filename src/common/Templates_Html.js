@@ -419,13 +419,15 @@ exports.add = function add(modules) {
 
 							const insertClientScripts = function _insertClientScripts(state) {
 								const clientScripts = new types.Map();
+								const integrities = new types.Map();
 								tools.forEach(state.buildFiles, function (file, key, ar) {
-									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module || '');
+									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
 									if (moduleScripts) {
-										const scripts = moduleScripts.get(file.path || '');
+										const scripts = moduleScripts.get(file.path);
 										if (scripts) {
 											scripts.forEach(function(script, src, map) {
 												clientScripts.set(src, script);
+												integrities.set(src, file.integrity);
 											});
 										};
 									};
@@ -438,8 +440,9 @@ exports.add = function add(modules) {
 									writeHTML(state);
 									writeAsyncWrites(state);
 									codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri.combine(' + tools.toSource(types.toString(src)) + ')', false) + ');');
-									if (defaultIntegrity) {
-										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(defaultIntegrity) + ', "src");');
+									const integrity = integrities.get(src);
+									if (integrity) {
+										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(integrity) + ', "src");');
 									};
 									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
 									state.html += '></script>';
@@ -462,7 +465,6 @@ exports.add = function add(modules) {
 							const preParse = function _preParse(node, state) {
 								return Promise.try(function tryPreParse() {
 									const promises = [];
-									const files = [];
 									if (!state) {
 										state = {
 											isModules: false,
@@ -481,41 +483,43 @@ exports.add = function add(modules) {
 												} else if (state.isModules && (name === 'load')) {
 													if (types.toBoolean(child.getAttr("build"))) {
 														const file = {
-															module: child.getAttr("module"),
-															path: child.getAttr("path"),
+															module: child.getAttr("module") || '',
+															path: child.getAttr("path") || '',
 															optional: types.toBoolean(child.getAttr("optional")),
-															//isConfig:
+															integrity: child.getAttr("integrity") || defaultIntegrity || null,
 														};
-														files.push(file);
 														state.buildFiles.push(file);
 													};
 												};
 											};
 										};
 									});
-									if (files.length > 0) {
-										promises.push(Promise.map(files, function(file) {
-											return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
-												if (__Internal__.clientScripts) {
-													if (!err) {
-														let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module || '');
-														if (!moduleScripts) {
-															moduleScripts = new types.Map();
-															__Internal__.clientScriptsPerModule.set(file.module || '', moduleScripts);
-														}
-														moduleScripts.set(file.path || '', __Internal__.clientScripts);
-													};
-													__Internal__.clientScripts = null;
-												};
-												if (err) {
-													throw err;
-												};
-											});
-										}, {concurrency: 1}));
-									};
 									return Promise.all(promises).then(function() {
 										return state.buildFiles;
 									});
+								});
+							};
+
+							const endPreParse = function _endPreParse(buildFiles) {
+								return Promise.map(buildFiles, function(file) {
+									return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
+										if (__Internal__.clientScripts) {
+											if (!err) {
+												let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
+												if (!moduleScripts) {
+													moduleScripts = new types.Map();
+													__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
+												}
+												moduleScripts.set(file.path, __Internal__.clientScripts);
+											};
+											__Internal__.clientScripts = null;
+										};
+										if (err) {
+											throw err;
+										};
+									});
+								}, {concurrency: 1}).then(function() {
+									return buildFiles;
 								});
 							};
 
@@ -824,8 +828,7 @@ exports.add = function add(modules) {
 								};
 							};
 
-
-							return preParse(ddi).then(function mainParse(buildFiles) {
+							const mainParse = function _mainParse(buildFiles) {
 								const state = {
 									html: '',
 									writes: '',
@@ -844,7 +847,7 @@ exports.add = function add(modules) {
 
 								fnHeader();
 
-								if (this.type === 'ddt') {
+								if (self.type === 'ddt') {
 									// TODO: Replace by XPATH search when it will be available in @doodad-js/xml.
 									const doctypeNodes = ddi.getChildren().find('doctype')
 										.filter(function(doctypeNode) {
@@ -865,13 +868,15 @@ exports.add = function add(modules) {
 
 								fnFooter();
 
-
 								self.cache = cache;
 								self.cacheDuration = cacheDuration;
 
-
 								return Promise.all(state.promises);
-							}, this);
+							};
+
+							return preParse(ddi)
+								.then(endPreParse)
+								.then(mainParse);
 						}, this);
 					},
 
