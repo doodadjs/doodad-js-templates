@@ -476,10 +476,8 @@ exports.add = function add(modules) {
 
 											if (ns === DDT_URI) {
 												if (!state.isModules && (name === 'modules')) {
-													const isModules = state.isModules;
-													state.isModules = true;
-													promises.push(preParse(child, state));
-													state.isModules = isModules;
+													const newState = tools.extend({}, state, {isModules: true});
+													promises.push(preParse(child, newState));
 												} else if (state.isModules && (name === 'load')) {
 													if (types.toBoolean(child.getAttr("build"))) {
 														const file = {
