@@ -67,7 +67,8 @@ exports.add = function add(modules) {
 				ddtxCache: tools.nullObject(),
 
 				clientScripts: null,  // <FUTURE> Global to thread
-				clientScriptsPerModule: new types.Map() // <FUTURE> Shared between threads
+				unregisteredClientScripts: null,  // <FUTURE> Global to thread
+				clientScriptsPerModule: new types.Map(), // <FUTURE> Shared between threads
 			};
 
 
@@ -105,29 +106,20 @@ exports.add = function add(modules) {
 
 			templatesHtml.ADD('registerClientScript', function registerClientScript(src, async) {
 				if (!__Internal__.clientScripts) {
-					__Internal__.clientScripts = new types.Map();
-				}
-				let url;
-				if (types._instanceof(src, files.Url)) {
-					url = src;
-					src = src.toApiString();
-				} else {
-					url = files.parseUrl(src);
+					throw types.NotAvailable("'registerClientScript' is not available at this moment.");
 				};
-				__Internal__.clientScripts.set(src, {url, async});
+				src = types.toString(src);
+				__Internal__.clientScripts.set(src, {async});
+				__Internal__.unregisteredClientScripts.delete(src);
 			});
 
 			templatesHtml.ADD('unregisterClientScript', function unregisterClientScript(src) {
-				src = types.toString(src);
-				if (__Internal__.clientScripts) {
-					__Internal__.clientScripts.delete(src);
+				if (!__Internal__.clientScripts) {
+					throw types.NotAvailable("'unregisterClientScript' is not available at this moment.");
 				};
-				// TODO: Delete just for current parsed DDT
-				//__Internal__.clientScriptsPerModule.forEach(function(val, key, map) {
-				//	val.forEach(function(val2, key2, map2) {
-				//		val2.delete(src);
-				//	});
-				//});
+				src = types.toString(src);
+				__Internal__.clientScripts.delete(src);
+				__Internal__.unregisteredClientScripts.add(src);
 			});
 
 			//===================================
@@ -420,32 +412,38 @@ exports.add = function add(modules) {
 							const insertClientScripts = function _insertClientScripts(state) {
 								const clientScripts = new types.Map();
 								const integrities = new types.Map();
+								const unregistered = new types.Set();
 								tools.forEach(state.buildFiles, function (file, key, ar) {
 									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
 									if (moduleScripts) {
 										const scripts = moduleScripts.get(file.path);
 										if (scripts) {
-											scripts.forEach(function(script, src, map) {
+											scripts.clientScripts.forEach(function(script, src, map) {
 												clientScripts.set(src, script);
 												integrities.set(src, file.integrity);
+											});
+											scripts.unregisteredClientScripts.forEach(function(src, key, set) {
+												unregistered.add(src);
 											});
 										};
 									};
 								});
 								clientScripts.forEach(function(script, src, map) {
-									state.html += '<script';
-									if (script.async) {
-										state.html += ' async';
+									if (!unregistered.has(src)) {
+										state.html += '<script';
+										if (script.async) {
+											state.html += ' async';
+										};
+										writeHTML(state);
+										writeAsyncWrites(state);
+										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri.combine(' + tools.toSource(types.toString(src)) + ')', false) + ');');
+										const integrity = integrities.get(src);
+										if (integrity) {
+											codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(integrity) + ', "src");');
+										};
+										codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
+										state.html += '></script>';
 									};
-									writeHTML(state);
-									writeAsyncWrites(state);
-									codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri.combine(' + tools.toSource(types.toString(src)) + ')', false) + ');');
-									const integrity = integrities.get(src);
-									if (integrity) {
-										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(integrity) + ', "src");');
-									};
-									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
-									state.html += '></script>';
 								});
 							};
 
@@ -465,12 +463,6 @@ exports.add = function add(modules) {
 							const preParse = function _preParse(node, state) {
 								return Promise.try(function tryPreParse() {
 									const promises = [];
-									if (!state) {
-										state = {
-											isModules: false,
-											buildFiles: [],
-										};
-									};
 									node.getChildren().forEach(function forEachChild(child, pos, ar) {
 										if (types._instanceof(child, xml.Element)) {
 											const name = child.getName(),
@@ -502,18 +494,24 @@ exports.add = function add(modules) {
 
 							const endPreParse = function _endPreParse(buildFiles) {
 								return Promise.map(buildFiles, function(file) {
+									__Internal__.clientScripts = new types.Map();
+									__Internal__.unregisteredClientScripts = new types.Set();
 									return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
-										if (__Internal__.clientScripts) {
-											if (!err) {
+										if (!err) {
+											if (__Internal__.clientScripts.size > 0) {
 												let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
 												if (!moduleScripts) {
 													moduleScripts = new types.Map();
 													__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
-												}
-												moduleScripts.set(file.path, __Internal__.clientScripts);
+												};
+												moduleScripts.set(file.path, {
+													clientScripts: __Internal__.clientScripts,
+													unregisteredClientScripts: __Internal__.unregisteredClientScripts,
+												});
 											};
-											__Internal__.clientScripts = null;
 										};
+										__Internal__.clientScripts = null;
+										__Internal__.unregisteredClientScripts = null;
 										if (err) {
 											throw err;
 										};
@@ -874,7 +872,10 @@ exports.add = function add(modules) {
 								return Promise.all(state.promises);
 							};
 
-							return preParse(ddi)
+							return preParse(ddi, {
+								isModules: false,
+								buildFiles: [],
+							})
 								.then(endPreParse)
 								.then(mainParse);
 						}, this);
