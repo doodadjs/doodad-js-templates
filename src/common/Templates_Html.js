@@ -725,7 +725,7 @@ exports.add = function add(modules) {
 														state.hasHead = true;
 													};
 													addModules = !!state.modules;
-													addClientScripts = true;
+													addClientScripts = state.buildFiles.length > 0;
 													state.hasBody = true;
 												};
 												state.html += '<' + name;
