@@ -498,7 +498,7 @@ exports.add = function add(modules) {
 									__Internal__.unregisteredClientScripts = new types.Set();
 									return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
 										if (!err) {
-											if (__Internal__.clientScripts.size > 0) {
+											if ((__Internal__.clientScripts.size > 0) || (__Internal__.unregisteredClientScripts.size > 0)) {
 												let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
 												if (!moduleScripts) {
 													moduleScripts = new types.Map();
