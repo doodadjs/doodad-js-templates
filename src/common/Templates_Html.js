@@ -33,12 +33,8 @@ exports.add = function add(modules) {
 	modules = (modules || {});
 	modules['Doodad.Templates.Html'] = {
 		version: /*! REPLACE_BY(TO_SOURCE(VERSION(MANIFEST("name")))) */ null /*! END_REPLACE()*/,
-		dependencies: [
-			{
-				name: 'Doodad.Templates.Html/Resources',
-				optional: true,
-			},
-		],
+		//dependencies: [
+		//],
 		namespaces: ['DDTX'],
 		create: function create(root, /*optional*/_options, _shared) {
 			//===================================
@@ -474,9 +470,11 @@ exports.add = function add(modules) {
 													promises.push(preParse(child, newState));
 												} else if (state.isModules && (name === 'load')) {
 													if (types.toBoolean(child.getAttr("build"))) {
+														const module = child.getAttr("module");
+														const path = child.getAttr("path");
 														const file = {
-															module: child.getAttr("module") || '',
-															path: child.getAttr("path") || '',
+															module,
+															path,
 															optional: types.toBoolean(child.getAttr("optional")),
 															integrity: child.getAttr("integrity") || defaultIntegrity || null,
 														};
@@ -496,25 +494,36 @@ exports.add = function add(modules) {
 								return Promise.map(buildFiles, function(file) {
 									__Internal__.clientScripts = new types.Map();
 									__Internal__.unregisteredClientScripts = new types.Set();
-									return modules.load([file], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
-										if (!err) {
-											if ((__Internal__.clientScripts.size > 0) || (__Internal__.unregisteredClientScripts.size > 0)) {
-												let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
-												if (!moduleScripts) {
-													moduleScripts = new types.Map();
-													__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
+									let promise;
+									if (file.module) {
+										promise = resources.locate(file.path, {module: file.module})
+											.then(function(path) {
+												return path;
+											});
+									} else {
+										promise = Promise.resolve(file.path);
+									};
+									return promise.then(function(path) {
+										return modules.load([{path}], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
+											if (!err) {
+												if ((__Internal__.clientScripts.size > 0) || (__Internal__.unregisteredClientScripts.size > 0)) {
+													let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
+													if (!moduleScripts) {
+														moduleScripts = new types.Map();
+														__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
+													};
+													moduleScripts.set(file.path, {
+														clientScripts: __Internal__.clientScripts,
+														unregisteredClientScripts: __Internal__.unregisteredClientScripts,
+													});
 												};
-												moduleScripts.set(file.path, {
-													clientScripts: __Internal__.clientScripts,
-													unregisteredClientScripts: __Internal__.unregisteredClientScripts,
-												});
 											};
-										};
-										__Internal__.clientScripts = null;
-										__Internal__.unregisteredClientScripts = null;
-										if (err) {
-											throw err;
-										};
+											__Internal__.clientScripts = null;
+											__Internal__.unregisteredClientScripts = null;
+											if (err) {
+												throw err;
+											};
+										});
 									});
 								}, {concurrency: 1}).then(function() {
 									return buildFiles;
@@ -902,9 +911,8 @@ exports.add = function add(modules) {
 							return files.openFile(this.path, {encoding: encoding})
 								.then(function openFilePromise(stream) {
 									let promise;
-									const loader = templatesHtml.getResourcesLoader();
 									if (xml.isAvailable({schemas: true})) {
-										promise = loader.locate('./common/res/schemas/');
+										promise = resources.locate('./common/res/schemas/', {module: '@doodad-js/templates'});
 									} else {
 										promise = Promise.resolve(null);
 									};
@@ -1102,7 +1110,7 @@ exports.add = function add(modules) {
 										};
 									});
 								}),
-								modules.load([{module: module, path: path}], {startup: {secret: _shared.SECRET}, "Doodad.Templates.Html.DDTX": {ddtxId: key}}),
+								modules.load([{module, path}], {startup: {secret: _shared.SECRET}, "Doodad.Templates.Html.DDTX": {ddtxId: key}}),
 							])
 								.then(function(results) {
 									const ddtx = results[0];
@@ -1152,14 +1160,8 @@ exports.add = function add(modules) {
 			});
 
 
-			return function init(options) {
-				const Promise = types.getPromise();
-				return Promise.resolve(root.serverSide ? files.Path.parse(module.filename) : modules.locate(/*! INJECT(TO_SOURCE(MANIFEST('name'))) */))
-					.then(function(location) {
-						location = location.set({file: ''});
-						resources.createResourcesLoader(templatesHtml, (root.serverSide ? location.moveUp(1) : location));
-					});
-			};
+			//return function init(options) {
+			//};
 		},
 	};
 	return modules;

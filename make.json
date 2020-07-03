@@ -74,18 +74,12 @@
 	],
 	resources: [
 		{
-			name: null,
-			namespace: null,
-			sourceBase: "%SOURCEDIR%/",
 			source: "server/res",
 			client: false,
 			server: true,
 			browserify: false
 		},
 		{
-			name: "Doodad.Templates.Html/Resources",
-			namespace: "Doodad.Templates.Html",
-			sourceBase: "%SOURCEDIR%/",
 			source: "common/res",
 			client: true,
 			server: true,

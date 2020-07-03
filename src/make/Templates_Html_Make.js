@@ -56,6 +56,7 @@ exports.add = function add(modules) {
 			const doodad = root.Doodad,
 				types = doodad.Types,
 				tools = doodad.Tools,
+				resources = doodad.Resources,
 				modules = doodad.Modules,
 				//nodejs = doodad.NodeJs,
 				//files = tools.Files,
@@ -106,7 +107,10 @@ exports.add = function add(modules) {
 						if (xml.isAvailable({messages: true})) {
 							promise = Promise.resolve();
 						} else {
-							promise = modules.load([{module: '@doodad-js/xml', path: "src/common/Tools_Xml_Parsers_Libxml2_Errors.js"}]);
+							promise = resources.locate("common/res/Tools_Xml_Parsers_Libxml2_Errors.js", {module: '@doodad-js/xml'})
+								.then(function(path) {
+									return modules.load([{path}]);
+								});
 						};
 
 						return promise.then(function thenCompileDdt() {
