@@ -965,8 +965,8 @@ exports.add = function add(modules) {
 								'\n' + newLevel + 'const pageType = types.getType(this);' +
 								'\n' + newLevel + 'const locals = pageType.$getLocals();' +
 								'\n' + newLevel + 'locals.page = page;' +
-								// TODO: Do it better (modulesUri).
-								'\n' + newLevel + "locals.modulesUri = page.options.variables && page.options.variables.modulesUri && locals.tools.Files.parseUrl(page.options.variables.modulesUri || '/');" +
+								// TODO: Find a better place (modulesUri).
+								'\n' + newLevel + "locals.modulesUri = locals.tools.Files.parseUrl(page.options.variables && page.options.variables.modulesUri || '/');" +
 								'\n' + newLevel + 'const createEvalExpr = pageType.$getCreateEvalExpr(page, locals);' +
 								'\n' + newLevel + 'const oldDynVars = null;';
 						};
