@@ -376,9 +376,13 @@ exports.add = function add(modules) {
 
 															cached.addEventListener('validate', function() {
 																if (!onUnloadListener) {
-																	files.watch(path, onUnloadListener = function() {
-																		cached.invalidate();
-																	}, {once: true});
+																	try {
+																		files.watch(path, onUnloadListener = function() {
+																			cached.invalidate();
+																		}, {once: true});
+																	} catch(ex) {
+																		// Do nothing
+																	};
 																};
 															});
 
