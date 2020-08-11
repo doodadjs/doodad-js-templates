@@ -62,8 +62,7 @@ exports.add = function add(modules) {
 				templatesCached: tools.nullObject(),
 				ddtxCache: tools.nullObject(),
 
-				clientScripts: null,  // <FUTURE> Global to thread
-				clientScriptsPerModule: new types.Map(), // <FUTURE> Shared between threads
+				buildFiles: new types.Map(),  // <FUTURE> Global to thread
 			};
 
 
@@ -96,24 +95,43 @@ exports.add = function add(modules) {
 			}));
 
 			//===================================
-			// registerClientScript
+			// ClientScripts
 			//===================================
 
-			templatesHtml.ADD('registerClientScripts', function registerClientScript(srcs, /*optional*/options) {
-				if (!__Internal__.clientScripts) {
-					throw types.NotAvailable("'registerClientScripts' is not available at this moment.");
-				};
-				srcs = (types.isArray(srcs) ? srcs : [srcs]);
-				tools.forEach(srcs, src => __Internal__.clientScripts.set(types.toString(src), tools.nullObject(options)));
-			});
+			templatesHtml.REGISTER(doodad.Object.$extend(
+				doodad.MixIns.Events,
+				{
+					$TYPE_NAME: 'BuildFile',
 
-			templatesHtml.ADD('unregisterClientScripts', function unregisterClientScript(srcs) {
-				if (!__Internal__.clientScripts) {
-					throw types.NotAvailable("'unregisterClientScripts' is not available at this moment.");
-				};
-				srcs = (types.isArray(srcs) ? srcs : [srcs]);
-				tools.forEach(srcs, src => __Internal__.clientScripts.delete(types.toString(src)));
-			});
+					onApply: doodad.PUBLIC(doodad.EVENT()),  // function(ev)
+
+					apply: doodad.PUBLIC(function apply(scripts) {
+						const ev = new doodad.Event({scripts});
+						this.onApply(ev);
+					}),
+				}));
+
+			templatesHtml.REGISTER(doodad.Object.$extend(
+				{
+					$TYPE_NAME: 'ClientScripts',
+
+					scripts: doodad.PROTECTED(null),
+
+					create: doodad.OVERRIDE(function create() {
+						this._super();
+						this.scripts = new types.Map();
+					}),
+
+					get: doodad.PUBLIC(function get() {
+						return [...(this.scripts.entries())];
+					}),
+
+					register: doodad.PUBLIC(function register(srcs, /*optional*/options) {
+						srcs = (types.isArray(srcs) ? srcs : [srcs]);
+						options = tools.nullObject(options);
+						tools.forEach(srcs, src => this.scripts.set(types.toString(src), options));
+					}),
+				}));
 
 			//===================================
 			// TemplateBase
@@ -178,6 +196,53 @@ exports.add = function add(modules) {
 						});
 					})),
 
+					asyncRunBuildFiles: doodad.PUBLIC(function asyncRunBuildFiles(files, evalExpr) {
+						const Promise = types.getPromise();
+						return Promise.map(files, function(file) {
+							let promise;
+							if (file.module) {
+								promise = resources.locate(file.path, {module: file.module});
+							} else {
+								promise = Promise.resolve(file.path);
+							};
+							return promise.then(function(path) {
+								const pathStr = types.toString(path);
+								let buildFile = __Internal__.buildFiles.get(pathStr);
+								let promise;
+								if (buildFile) {
+									promise = Promise.resolve();
+								} else {
+									buildFile = new templatesHtml.BuildFile();
+									promise = modules.load([{path}], {startup: {secret: _shared.SECRET}, 'Doodad.Templates.Html': {buildFile}})
+										.then(function() {
+											__Internal__.buildFiles.set(pathStr, buildFile);
+										}, null, this);
+									//.catch(function(ex) {
+									//	throw ex;
+									//});
+								};
+								promise = promise.then(function() {
+									const scripts = new templatesHtml.ClientScripts();
+									buildFile.apply(scripts);
+									let promise = Promise.resolve();
+									tools.forEach(scripts.get(), function(item) {
+										const src = item[0];
+										const options = item[1];
+										promise = promise.then(() => this.writeAsync('<script' + (options.async ? ' async' : '')));
+										promise = promise.then(() => this.compileAttr('src', evalExpr('modulesUri.combine(' + tools.toSource(src) + ')', false)));
+										if (file.integrity) {
+											promise = promise.then(() => this.compileIntegrityAttr('integrity', file.integrity, 'src'));
+										};
+										promise = promise.then(() => this.asyncWriteAttrs());
+										promise = promise.then(() => this.writeAsync('></script>'));
+									}, this);
+									return promise;
+								}, null, this);
+								return promise;
+							}, null, this);
+						}, {concurrency: 1, thisObj: this});
+					}),
+
 					compileAttr: doodad.PUBLIC(doodad.MUST_OVERRIDE()), // function(key, value)
 					compileIntegrityAttr: doodad.PUBLIC(doodad.NOT_IMPLEMENTED()), // function(key, value, src)
 
@@ -224,9 +289,13 @@ exports.add = function add(modules) {
 									};
 								};
 
-								files.watch(path, function watchFileCallback() {
-									deleteFn(key, ddi);
-								}, {once: true});
+								try {
+									files.watch(path, function watchFileCallback() {
+										deleteFn(key, ddi);
+									}, {once: true});
+								} catch(ex) {
+									// Do nothing
+								};
 							};
 						};
 
@@ -403,52 +472,9 @@ exports.add = function add(modules) {
 							};
 
 							const insertClientScripts = function _insertClientScripts(state) {
-								const clientScripts = new types.Map();
-								const integrities = new types.Map();
-								tools.forEach(state.buildFiles, function (file, key, ar) {
-									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
-									if (moduleScripts) {
-										const scripts = moduleScripts.get(file.path);
-										if (scripts) {
-											scripts.clientScripts.forEach(function(options, src, map) {
-												clientScripts.set(src, options);
-												integrities.set(src, file.integrity);
-											});
-										};
-									};
-								});
 								writeHTML(state);
 								writeAsyncWrites(state);
-								let code = '';
-								code += "(function() {\n";
-								code += "\tconst srcs = [];\n";
-								code += "\tlet name;\n";
-								clientScripts.forEach(function(options, src, map) {
-									if (options.eval) {
-										// TODO: Use "safeEval" ?
-										code += "\tname = tools.createEval(['root', 'types', 'tools'])(root, types, tools)(" + tools.toSource(src) + ");\n";
-									} else {
-										code += "\tname = " + tools.toSource(src) + ";\n";
-									}
-									code += "\tif (types.isArray(name)) {\n";
-									code += "\t\ttools.append(srcs, tools.map(name, name => ({name, async: " + tools.toSource(options.async) + ", integrity: " + tools.toSource(integrities.get(src)) + "})));\n";
-									code += "\t} else {\n";
-									code += "\t\tsrcs.push({name, async: " + tools.toSource(options.async) + ", integrity: " + tools.toSource(integrities.get(src)) + "});\n";
-									code += "\t}\n";
-								});
-								code += "\tlet promise = Promise.resolve();\n";
-								code += "\ttools.forEach(srcs, function(src) {\n";
-								code += "\t\tpromise = promise.then(() => page.writeAsync('<script' + (src.async ? ' async' : '')));\n";
-								code += "\t\tpromise = promise.then(() => page.compileAttr('src', evalExpr('modulesUri.combine(' + tools.toSource(types.toString(src.name)) + ')', false)));\n";
-								code += "\t\tif (src.integrity) {\n";
-								code += "\t\t\tpromise = promise.then(() => page.compileIntegrityAttr('integrity', src.integrity, 'src'));\n";
-								code += "\t\t}\n";
-								code += "\t\tpromise = promise.then(() => page.asyncWriteAttrs());\n";
-								code += "\t\tpromise = promise.then(() => page.writeAsync('></script>'));\n";
-								code += "\t});\n";
-								code += "\treturn promise;\n";
-								code += "})();\n";
-								codeParts[codeParts.length] = __Internal__.surroundAsync(code);
+								codeParts[codeParts.length] = __Internal__.surroundAsync("page.asyncRunBuildFiles(" + tools.toSource(state.buildFiles, 2) + ", evalExpr);");
 							};
 
 							const insertModules = function _insertModules(state) {
@@ -492,47 +518,11 @@ exports.add = function add(modules) {
 											};
 										};
 									});
-									return Promise.all(promises).then(function() {
-										return state.buildFiles;
+									return Promise.all(promises);
+								})
+									.then(function() {
+										return state;
 									});
-								});
-							};
-
-							const endPreParse = function _endPreParse(buildFiles) {
-								return Promise.map(buildFiles, function(file) {
-									__Internal__.clientScripts = new types.Map();
-									let promise;
-									if (file.module) {
-										promise = resources.locate(file.path, {module: file.module})
-											.then(function(path) {
-												return path;
-											});
-									} else {
-										promise = Promise.resolve(file.path);
-									};
-									return promise.then(function(path) {
-										return modules.load([{path}], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
-											if (!err) {
-												if (__Internal__.clientScripts.size > 0) {
-													let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
-													if (!moduleScripts) {
-														moduleScripts = new types.Map();
-														__Internal__.clientScriptsPerModule.set(file.module, moduleScripts);
-													};
-													moduleScripts.set(file.path, {
-														clientScripts: __Internal__.clientScripts,
-													});
-												};
-											};
-											__Internal__.clientScripts = null;
-											if (err) {
-												throw err;
-											};
-										});
-									});
-								}, {concurrency: 1}).then(function() {
-									return buildFiles;
-								});
 							};
 
 							const parseNode = function _parseNode(node, state) {
@@ -840,23 +830,7 @@ exports.add = function add(modules) {
 								};
 							};
 
-							const mainParse = function _mainParse(buildFiles) {
-								const state = {
-									html: '',
-									writes: '',
-									isIf: false,
-									isModules: false,
-									isOptions: false,
-									isHtml: false,
-									promises: [],
-									cacheId: null,
-									modules: null,
-									options: tools.nullObject(),
-									hasHead: false,
-									hasBody: false,
-									buildFiles,
-								};
-
+							const mainParse = function _mainParse(state) {
 								fnHeader();
 
 								if (self.type === 'ddt') {
@@ -875,6 +849,7 @@ exports.add = function add(modules) {
 								};
 
 								parseNode(ddi, state);
+
 								writeHTML(state);
 								writeAsyncWrites(state);
 
@@ -886,11 +861,24 @@ exports.add = function add(modules) {
 								return Promise.all(state.promises);
 							};
 
-							return preParse(ddi, {
+							const state = {
+								html: '',
+								writes: '',
+								isIf: false,
 								isModules: false,
+								isOptions: false,
+								isHtml: false,
+								promises: [],
+								cacheId: null,
+								modules: null,
+								options: tools.nullObject(),
+								hasHead: false,
+								hasBody: false,
+								isModule: false,
 								buildFiles: [],
-							})
-								.then(endPreParse)
+							};
+
+							return preParse(ddi, state)
 								.then(mainParse);
 						}, this);
 					},
