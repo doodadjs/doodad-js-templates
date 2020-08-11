@@ -63,7 +63,6 @@ exports.add = function add(modules) {
 				ddtxCache: tools.nullObject(),
 
 				clientScripts: null,  // <FUTURE> Global to thread
-				unregisteredClientScripts: null,  // <FUTURE> Global to thread
 				clientScriptsPerModule: new types.Map(), // <FUTURE> Shared between threads
 			};
 
@@ -100,22 +99,20 @@ exports.add = function add(modules) {
 			// registerClientScript
 			//===================================
 
-			templatesHtml.ADD('registerClientScript', function registerClientScript(src, async) {
+			templatesHtml.ADD('registerClientScripts', function registerClientScript(srcs, /*optional*/options) {
 				if (!__Internal__.clientScripts) {
-					throw types.NotAvailable("'registerClientScript' is not available at this moment.");
+					throw types.NotAvailable("'registerClientScripts' is not available at this moment.");
 				};
-				src = types.toString(src);
-				__Internal__.clientScripts.set(src, {async});
-				__Internal__.unregisteredClientScripts.delete(src);
+				srcs = (types.isArray(srcs) ? srcs : [srcs]);
+				tools.forEach(srcs, src => __Internal__.clientScripts.set(types.toString(src), tools.nullObject(options)));
 			});
 
-			templatesHtml.ADD('unregisterClientScript', function unregisterClientScript(src) {
+			templatesHtml.ADD('unregisterClientScripts', function unregisterClientScript(srcs) {
 				if (!__Internal__.clientScripts) {
-					throw types.NotAvailable("'unregisterClientScript' is not available at this moment.");
+					throw types.NotAvailable("'unregisterClientScripts' is not available at this moment.");
 				};
-				src = types.toString(src);
-				__Internal__.clientScripts.delete(src);
-				__Internal__.unregisteredClientScripts.add(src);
+				srcs = (types.isArray(srcs) ? srcs : [srcs]);
+				tools.forEach(srcs, src => __Internal__.clientScripts.delete(types.toString(src)));
 			});
 
 			//===================================
@@ -408,39 +405,50 @@ exports.add = function add(modules) {
 							const insertClientScripts = function _insertClientScripts(state) {
 								const clientScripts = new types.Map();
 								const integrities = new types.Map();
-								const unregistered = new types.Set();
 								tools.forEach(state.buildFiles, function (file, key, ar) {
 									const moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
 									if (moduleScripts) {
 										const scripts = moduleScripts.get(file.path);
 										if (scripts) {
-											scripts.clientScripts.forEach(function(script, src, map) {
-												clientScripts.set(src, script);
+											scripts.clientScripts.forEach(function(options, src, map) {
+												clientScripts.set(src, options);
 												integrities.set(src, file.integrity);
 											});
-											scripts.unregisteredClientScripts.forEach(function(src, key, set) {
-												unregistered.add(src);
-											});
 										};
 									};
 								});
-								clientScripts.forEach(function(script, src, map) {
-									if (!unregistered.has(src)) {
-										state.html += '<script';
-										if (script.async) {
-											state.html += ' async';
-										};
-										writeHTML(state);
-										writeAsyncWrites(state);
-										codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileAttr("src", ' + prepareExpr('modulesUri.combine(' + tools.toSource(types.toString(src)) + ')', false) + ');');
-										const integrity = integrities.get(src);
-										if (integrity) {
-											codeParts[codeParts.length] = __Internal__.surroundAsync('page.compileIntegrityAttr("integrity",' + tools.toSource(integrity) + ', "src");');
-										};
-										codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncWriteAttrs();');
-										state.html += '></script>';
-									};
+								writeHTML(state);
+								writeAsyncWrites(state);
+								let code = '';
+								code += "(function() {\n";
+								code += "\tconst srcs = [];\n";
+								code += "\tlet name;\n";
+								clientScripts.forEach(function(options, src, map) {
+									if (options.eval) {
+										// TODO: Use "safeEval" ?
+										code += "\tname = tools.createEval(['root', 'types', 'tools'])(root, types, tools)(" + tools.toSource(src) + ");\n";
+									} else {
+										code += "\tname = " + tools.toSource(src) + ";\n";
+									}
+									code += "\tif (types.isArray(name)) {\n";
+									code += "\t\ttools.append(srcs, tools.map(name, name => ({name, async: " + tools.toSource(options.async) + ", integrity: " + tools.toSource(integrities.get(src)) + "})));\n";
+									code += "\t} else {\n";
+									code += "\t\tsrcs.push({name, async: " + tools.toSource(options.async) + ", integrity: " + tools.toSource(integrities.get(src)) + "});\n";
+									code += "\t}\n";
 								});
+								code += "\tlet promise = Promise.resolve();\n";
+								code += "\ttools.forEach(srcs, function(src) {\n";
+								code += "\t\tpromise = promise.then(() => page.writeAsync('<script' + (src.async ? ' async' : '')));\n";
+								code += "\t\tpromise = promise.then(() => page.compileAttr('src', evalExpr('modulesUri.combine(' + tools.toSource(types.toString(src.name)) + ')', false)));\n";
+								code += "\t\tif (src.integrity) {\n";
+								code += "\t\t\tpromise = promise.then(() => page.compileIntegrityAttr('integrity', src.integrity, 'src'));\n";
+								code += "\t\t}\n";
+								code += "\t\tpromise = promise.then(() => page.asyncWriteAttrs());\n";
+								code += "\t\tpromise = promise.then(() => page.writeAsync('></script>'));\n";
+								code += "\t});\n";
+								code += "\treturn promise;\n";
+								code += "})();\n";
+								codeParts[codeParts.length] = __Internal__.surroundAsync(code);
 							};
 
 							const insertModules = function _insertModules(state) {
@@ -493,7 +501,6 @@ exports.add = function add(modules) {
 							const endPreParse = function _endPreParse(buildFiles) {
 								return Promise.map(buildFiles, function(file) {
 									__Internal__.clientScripts = new types.Map();
-									__Internal__.unregisteredClientScripts = new types.Set();
 									let promise;
 									if (file.module) {
 										promise = resources.locate(file.path, {module: file.module})
@@ -506,7 +513,7 @@ exports.add = function add(modules) {
 									return promise.then(function(path) {
 										return modules.load([{path}], {startup: {secret: _shared.SECRET}}).nodeify(function(err, val) {
 											if (!err) {
-												if ((__Internal__.clientScripts.size > 0) || (__Internal__.unregisteredClientScripts.size > 0)) {
+												if (__Internal__.clientScripts.size > 0) {
 													let moduleScripts = __Internal__.clientScriptsPerModule.get(file.module);
 													if (!moduleScripts) {
 														moduleScripts = new types.Map();
@@ -514,12 +521,10 @@ exports.add = function add(modules) {
 													};
 													moduleScripts.set(file.path, {
 														clientScripts: __Internal__.clientScripts,
-														unregisteredClientScripts: __Internal__.unregisteredClientScripts,
 													});
 												};
 											};
 											__Internal__.clientScripts = null;
-											__Internal__.unregisteredClientScripts = null;
 											if (err) {
 												throw err;
 											};
