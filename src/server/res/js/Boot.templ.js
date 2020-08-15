@@ -52,6 +52,8 @@
 							module: /*! INJECT(TO_SOURCE(VAR("mod.module") || null)) */,
 							path: /*! INJECT(TO_SOURCE(VAR("mod.path") || null)) */,
 							optional: /*! INJECT(TO_SOURCE(VAR("mod.optional") || false)) */,
+							mjs: /*! INJECT(TO_SOURCE(VAR("mod.mjs") || false)) */,
+							dontForceMin: /*! INJECT(TO_SOURCE(VAR("mod.dontForceMin") || false)) */,
 						}
 					//! END_MAP()
 				];
