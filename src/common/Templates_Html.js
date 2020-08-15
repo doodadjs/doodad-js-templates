@@ -233,6 +233,9 @@ exports.add = function add(modules) {
 										if (file.integrity) {
 											promise = promise.then(() => this.compileIntegrityAttr('integrity', file.integrity, 'src'));
 										};
+										if (file.mjs || src.endsWith('.mjs')) {
+											promise = promise.then(() => this.compileAttr('type', 'module'));
+										};
 										promise = promise.then(() => this.asyncWriteAttrs());
 										promise = promise.then(() => this.writeAsync('></script>'));
 									}, this);
@@ -511,6 +514,8 @@ exports.add = function add(modules) {
 															path,
 															optional: types.toBoolean(child.getAttr("optional")),
 															integrity: child.getAttr("integrity") || defaultIntegrity || null,
+															mjs: types.toBoolean(child.getAttr("mjs") || false),
+															dontForceMin: types.toBoolean(child.getAttr("dontForceMin") || false),
 														};
 														state.buildFiles.push(file);
 													};
@@ -699,6 +704,8 @@ exports.add = function add(modules) {
 															path: child.getAttr("path") || null,
 															optional: types.toBoolean(child.getAttr("optional") || false),
 															integrity: child.getAttr("integrity") || defaultIntegrity || null,
+															mjs: types.toBoolean(child.getAttr("mjs") || false),
+															dontForceMin: types.toBoolean(child.getAttr("dontForceMin") || false),
 														});
 													};
 												};
