@@ -129,7 +129,7 @@ exports.add = function add(modules) {
 					register: doodad.PUBLIC(function register(srcs, /*optional*/options) {
 						srcs = (types.isArray(srcs) ? srcs : [srcs]);
 						options = tools.nullObject(options);
-						tools.forEach(srcs, src => this.scripts.set(types.toString(src), options));
+						tools.forEach(srcs, (src) => this.scripts.set(types.toString(src), options));
 					}),
 				}));
 

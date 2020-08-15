@@ -237,8 +237,6 @@ exports.add = function add(modules) {
 
 							if (!ddOptions.debug && !ddOptions.fromSource) {
 								// TODO: Move "isMinJs" to "Tools.File"
-								const MIN_JS_EXT = '.min.js',
-									MIN_JS_EXT_LEN = MIN_JS_EXT.length;
 								const isMinJs = function _isMinJs(path) {
 									const ext = "." + path.extension + ".";
 									return ext.indexOf('.min.') >= 0;
