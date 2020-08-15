@@ -59,6 +59,8 @@
             <xs:attribute name="optional" type="xs:boolean" use="optional" default="false" />
             <xs:attribute name="integrity" type="xs:string" use="optional" />
             <xs:attribute name="build" type="xs:boolean" use="optional" default="false" />
+            <xs:attribute name="mjs" type="xs:boolean" use="optional" default="false" />
+            <xs:attribute name="dontForceMin" type="xs:boolean" use="optional" default="false" />
           </xs:complexType>
         </xs:element>
       </xs:sequence>
