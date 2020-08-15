@@ -233,21 +233,29 @@ exports.add = function add(modules) {
 							let doodadUrl = url.combine(doodadPackageUrl);
 							let bootUrl = url.combine(bootTemplateUrl);
 
-							if (!root.getOptions().debug) {
+							const ddOptions = root.getOptions();
+
+							if (!ddOptions.debug && !ddOptions.fromSource) {
 								// TODO: Move "isMinJs" to "Tools.File"
 								const MIN_JS_EXT = '.min.js',
 									MIN_JS_EXT_LEN = MIN_JS_EXT.length;
-								const isMinJs = function _isMinJs(fileName) {
-									return fileName.lastIndexOf(MIN_JS_EXT) === fileName.length - MIN_JS_EXT_LEN;
+								const isMinJs = function _isMinJs(path) {
+									const ext = "." + path.extension + ".";
+									return ext.indexOf('.min.') >= 0;
 								};
-								if (!isMinJs(doodadUrl.file)) {
+								if (!isMinJs(doodadUrl)) {
 									// TODO: Create "toMinJs" function in "Tools.Files"
-									doodadUrl = doodadUrl.set({extension: 'min.js'});
+									doodadUrl = doodadUrl.set({extension: 'min.' + doodadUrl.extension});
 								};
-								if (!isMinJs(bootUrl.file)) {
+								if (!isMinJs(bootUrl)) {
 									// TODO: Create "toMinJs" function in "Tools.Files"
-									bootUrl = bootUrl.set({extension: 'min.js'});
+									bootUrl = bootUrl.set({extension: 'min.' + bootUrl.extension});
 								};
+							};
+
+							const isMJS = function _isMJS(path) {
+								const ext = "." + path.extension;
+								return ext.endsWith('.mjs');
 							};
 
 							return this.request.resolve(doodadUrl, 'Doodad.Server.Http.StaticPage')
@@ -278,12 +286,14 @@ exports.add = function add(modules) {
 
 													return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadResolved.url) : Promise.resolve(null))
 														.then(function(integrity) {
-															return this.writeAsync('<script async src="' + doodadResolved.url.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
+															const mjs = isMJS(doodadResolved.url);
+															return this.writeAsync('<script async src="' + doodadResolved.url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
 														}, null, this)
 														.then(function(dummy) {
 															return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, bootUrlVars) : Promise.resolve(null))
 																.then(function(integrity) {
-																	return this.writeAsync('<script async src="' + bootUrlVars.toApiString() + '" ' + (integrity ? 'integrity="' + integrity + '" ' : '') + '></script>');
+																	const mjs = isMJS(bootUrlVars);
+																	return this.writeAsync('<script async src="' + bootUrlVars.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
 																}, null, this);
 														}, null, this);
 												}, null, this);
