@@ -93,8 +93,8 @@ exports.add = function add(modules) {
 					execute: doodad.OVERRIDE(function execute(command, item, /*optional*/options) {
 						//const Promise = types.getPromise();
 
-						const source = this.taskData.parseVariables(item.source, { isPath: true });
-						const dest = this.taskData.parseVariables(item.destination, { isPath: true });
+						const source = this.taskData.parseVariables(item.source, { isPath: true, isFolder: false });
+						const dest = this.taskData.parseVariables(item.destination, { isPath: true, isFolder: false });
 
 						tools.log(tools.LogLevels.Info, "Compiling template '~0~' to '~1~'...", [source, dest]);
 
