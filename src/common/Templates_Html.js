@@ -477,14 +477,14 @@ exports.add = function add(modules) {
 							const insertClientScripts = function _insertClientScripts(state) {
 								writeHTML(state);
 								writeAsyncWrites(state);
-								codeParts[codeParts.length] = __Internal__.surroundAsync("page.asyncRunBuildFiles(" + tools.toSource(state.buildFiles, 2) + ", evalExpr);");
+								codeParts[codeParts.length] = __Internal__.surroundAsync("page.asyncRunBuildFiles(" + tools.toSource(state.buildFiles, {depth: 2, itemsCount: Infinity}) + ", evalExpr);");
 							};
 
 							const insertModules = function _insertModules(state) {
 								if (state.modules) {
 									writeHTML(state);
 									writeAsyncWrites(state);
-									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, 5) + ',' + tools.toSource(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl, doodadPackageUrlIsExpr) + ',' + getExprFromAttrVal(bootTemplateUrl, bootTemplateUrlIsExpr) + ');');
+									codeParts[codeParts.length] = __Internal__.surroundAsync('page.asyncLoad(' + reduceStateOptions(state.options) + ',' + tools.toSource(state.modules, {depth: 5, itemsCount: Infinity}) + ',' + tools.toSource(defaultIntegrity) + ',' + getExprFromAttrVal(doodadPackageUrl, doodadPackageUrlIsExpr) + ',' + getExprFromAttrVal(bootTemplateUrl, bootTemplateUrlIsExpr) + ');');
 									state.modules = null;
 								};
 							};
