@@ -90,6 +90,13 @@ exports.add = function add(modules) {
 						state.noMain = !cache;
 						state.defaultDuration = (cache ? types.get(type.$options, 'cacheDuration', null) : '');
 
+						// Disable client (browser) and proxy cache.
+						request.response.addHeaders({
+							'Cache-Control': 'no-cache, no-store, must-revalidate',
+							'Pragma': 'no-cache',
+							'Expires': '0',
+						});
+
 						types.setAttribute(this, 'request', request);
 					}),
 
