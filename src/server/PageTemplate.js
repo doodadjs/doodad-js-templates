@@ -292,13 +292,17 @@ exports.add = function add(modules) {
 													return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadResolved.url) : Promise.resolve(null))
 														.then(function(integrity) {
 															const mjs = isMJS(doodadResolved.url);
-															return this.writeAsync('<script async src="' + doodadResolved.url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
+															// Put integrity in URL so that different versions of the same file are uploaded to the browser (because of the cache).
+															const url = (integrity ? doodadResolved.url.setArgs({integrity}) : doodadResolved.url);
+															return this.writeAsync('<script async src="' + url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
 														}, null, this)
 														.then(function(dummy) {
 															return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, bootUrlVars) : Promise.resolve(null))
 																.then(function(integrity) {
 																	const mjs = isMJS(bootUrlVars);
-																	return this.writeAsync('<script async src="' + bootUrlVars.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
+																	// Put integrity in URL so that different versions of the same file are uploaded to the browser (because of the cache).
+																	const url = (integrity ? bootUrlVars.setArgs({integrity}) : bootUrlVars);
+																	return this.writeAsync('<script async src="' + url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
 																}, null, this);
 														}, null, this);
 												}, null, this);
@@ -495,8 +499,13 @@ exports.add = function add(modules) {
 							};
 							return Promise.resolve(srcAttr)
 								.then(function(srcVal) {
-									compiledAttrs[src] = srcVal;
-									return this.getIntegrityValue(value, srcVal);
+									return this.getIntegrityValue(value, srcVal)
+										.then(function(integrity) {
+											// Put integrity in URL so that different versions of the same file are uploaded to the browser (because of the cache).
+											const url = (integrity ? files.Url.parse(srcVal).setArgs({integrity}).toApiString() : srcVal);
+											compiledAttrs[src] = url;
+											return integrity;
+										}, null, this);
 								}, null, this);
 						};
 					}),
@@ -517,18 +526,22 @@ exports.add = function add(modules) {
 						const Promise = types.getPromise();
 						const compiledAttrs = this.__compiledAttrs;
 						this.__compiledAttrs = null;
-						return Promise.map(types.entries(compiledAttrs), function(entry) {
-							let attr = entry[1];
+						return Promise.map(types.keys(compiledAttrs), function(name) {
+							let attr = compiledAttrs[name];
 							if (types.isFunction(attr)) {
 								attr = attr.call(this);
 							};
 							return Promise.resolve(attr)
 								.then(function(value) {
-									const name = entry[0];
 									compiledAttrs[name] = value;
-									return this.writeAsync(' ' + tools.escapeHtml(types.toString(name), true) + '="' + tools.escapeHtml(types.toString(value), false) + '"');
 								}, null, this);
-						}, {thisObj: this});
+						}, {thisObj: this, concurrency: 1})
+							.then(function() {
+								return Promise.map(types.keys(compiledAttrs), function(name) {
+									const value = compiledAttrs[name];
+									return this.writeAsync(' ' + tools.escapeHtml(types.toString(name), true) + '="' + tools.escapeHtml(types.toString(value), false) + '"');
+								}, {thisObj: this, concurrency: 1});
+							}, null, this);
 					}),
 				})));
 
