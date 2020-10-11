@@ -236,7 +236,8 @@ exports.add = function add(modules) {
 						const Promise = types.getPromise();
 
 						if (options || mods) {
-							const url = this.request.url.set({file: null});
+							const url = this.request.url.set({file: null}).removeArgs();
+							//url = url.setArgs({sessionId: this.request.url.getArg('sessionId', true)})  TODO: User Sessions
 							let doodadUrl = url.combine(doodadPackageUrl);
 							let bootUrl = url.combine(bootTemplateUrl);
 
