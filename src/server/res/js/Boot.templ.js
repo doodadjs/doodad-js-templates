@@ -54,6 +54,10 @@
 							optional: /*! INJECT(TO_SOURCE(VAR("mod.optional") || false)) */,
 							mjs: /*! INJECT(TO_SOURCE(VAR("mod.mjs") || false)) */,
 							dontForceMin: /*! INJECT(TO_SOURCE(VAR("mod.dontForceMin") || false)) */,
+							integrity: /*! INJECT(TO_SOURCE(VAR("mod.integrity") || false)) */,
+							integrityMin: /*! INJECT(TO_SOURCE(VAR("mod.integrityMin") || false)) */,
+							integrityMjs: /*! INJECT(TO_SOURCE(VAR("mod.integrityMjs") || false)) */,
+							integrityMjsMin: /*! INJECT(TO_SOURCE(VAR("mod.integrityMjsMin") || false)) */,
 						}
 					//! END_MAP()
 				];

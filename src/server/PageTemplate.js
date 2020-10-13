@@ -58,7 +58,8 @@ exports.add = function add(modules) {
 				//nodeJsIO = nodeJs.IO,
 				//nodejsIOInterfaces = nodeJsIO.Interfaces,
 				//safeEval = tools.SafeEval,
-				files = tools.Files;
+				files = tools.Files,
+				modules = doodad.Modules;
 
 
 			//const __Internal__ = {
@@ -264,46 +265,96 @@ exports.add = function add(modules) {
 								return ext.endsWith('.mjs');
 							};
 
-							return this.request.resolve(doodadUrl, 'Doodad.Server.Http.StaticPage')
-								.then(function(doodadResult) {
-									if (!doodadResult) {
-										throw new types.Error("Can't resolve resource at '~0~'.", [doodadUrl.toApiString()]);
-									};
+							const modulesUri = files.parseUrl(this.options.variables && this.options.variables.modulesUri || '/');
 
-									const doodadResolved = doodadResult[0];
-									//const doodadHandler = doodadResolved.handler;
-									//const doodadState = this.request.getHandlerState(doodadHandler);
-
-									return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptFileSystemPage')
-										.then(function(bootResult) {
-											if (!bootResult) {
-												throw new types.Error("Can't resolve resource at '~0~'.", [bootUrl.toApiString()]);
+							return Promise.map(mods || [], function(mod) {
+								let integrityMode = mod.integrity;
+								if (integrityMode === 'auto') {
+									integrityMode = defaultIntegrity;
+								};
+								if (integrityMode) {
+									return modules.clientLocate(mod.module, mod.path, {debug: true, baseUrl: this.request.url})
+										.then(function(modUrl) {
+											return modules.clientResolve(modUrl, {modulesUri, baseUrl: this.request.url});
+										}, null, this)
+										.then(function(modUrl) {
+											return this.getIntegrityValue(integrityMode, modUrl.set({extension: 'js'}))
+												.catch(function(err) {
+													return null;
+												}, this)
+												.then(function(integrity) {
+													mod.integrity = integrity;
+													return this.getIntegrityValue(integrityMode, modUrl.set({extension: 'min.js'}));
+												}, null, this)
+												.catch(function(err) {
+													return null;
+												}, this)
+												.then(function(integrity) {
+													mod.integrityMin = integrity;
+													return this.getIntegrityValue(integrityMode, modUrl.set({extension: 'mjs'}));
+												})
+												.catch(function(err) {
+													return null;
+												}, this)
+												.then(function(integrity) {
+													mod.integrityMjs = integrity;
+													return this.getIntegrityValue(integrityMode, modUrl.set({extension: 'min.mjs'}));
+												})
+												.catch(function(err) {
+													return null;
+												}, this)
+												.then(function(integrity) {
+													mod.integrityMjsMin = integrity;
+												}, null, this);
+										}, null, this)
+										.then(function() {
+											return mod;
+										}, null, this);
+								};
+								return mod;
+							}, {thisObj: this, concurrency: 1})
+								.then(function(mods) {
+									return this.request.resolve(doodadUrl, 'Doodad.Server.Http.StaticPage')
+										.then(function(doodadResult) {
+											if (!doodadResult) {
+												throw new types.Error("Can't resolve resource at '~0~'.", [doodadUrl.toApiString()]);
 											};
 
-											const bootResolved = bootResult[0];
-											const bootHandler = bootResolved.handler;
-											//const bootState = this.request.getHandlerState(bootHandler);
+											const doodadResolved = doodadResult[0];
+											//const doodadHandler = doodadResolved.handler;
+											//const doodadState = this.request.getHandlerState(doodadHandler);
 
-											return bootHandler.setJsVars(this.request, {options: options || null, modules: (mods && mods.length > 0 ? mods : null), startups: null})
-												.then(function(varsId) {
-													const bootUrlVars = bootResolved.url.setArgs({vars: varsId});
+											return this.request.resolve(bootUrl, 'Doodad.NodeJs.Server.Http.JavascriptFileSystemPage')
+												.then(function(bootResult) {
+													if (!bootResult) {
+														throw new types.Error("Can't resolve resource at '~0~'.", [bootUrl.toApiString()]);
+													};
 
-													// TODO: invalidate "bootUrlVars" on "varsId" expiration
+													const bootResolved = bootResult[0];
+													const bootHandler = bootResolved.handler;
+													//const bootState = this.request.getHandlerState(bootHandler);
 
-													return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadResolved.url) : Promise.resolve(null))
-														.then(function(integrity) {
-															const mjs = isMJS(doodadResolved.url);
-															// Put integrity in URL so that different versions of the same file are uploaded to the browser (because of the cache).
-															const url = (integrity ? doodadResolved.url.setArgs({integrity}) : doodadResolved.url);
-															return this.writeAsync('<script async src="' + url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
-														}, null, this)
-														.then(function(dummy) {
-															return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, bootUrlVars) : Promise.resolve(null))
+													return bootHandler.setJsVars(this.request, {options: options || null, modules: (mods && mods.length > 0 ? mods : null), startups: null})
+														.then(function(varsId) {
+															const bootUrlVars = bootResolved.url.setArgs({vars: varsId});
+
+															// TODO: invalidate "bootUrlVars" on "varsId" expiration
+
+															return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, doodadResolved.url) : Promise.resolve(null))
 																.then(function(integrity) {
-																	const mjs = isMJS(bootUrlVars);
+																	const mjs = isMJS(doodadResolved.url);
 																	// Put integrity in URL so that different versions of the same file are uploaded to the browser (because of the cache).
-																	const url = (integrity ? bootUrlVars.setArgs({integrity}) : bootUrlVars);
+																	const url = (integrity ? doodadResolved.url.setArgs({integrity}) : doodadResolved.url);
 																	return this.writeAsync('<script async src="' + url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
+																}, null, this)
+																.then(function(dummy) {
+																	return (defaultIntegrity ? this.getIntegrityValue(defaultIntegrity, bootUrlVars) : Promise.resolve(null))
+																		.then(function(integrity) {
+																			const mjs = isMJS(bootUrlVars);
+																			// Put integrity in URL so that different versions of the same file are uploaded to the browser (because of the cache).
+																			const url = (integrity ? bootUrlVars.setArgs({integrity}) : bootUrlVars);
+																			return this.writeAsync('<script async src="' + url.toApiString() + '"' + (integrity ? ' integrity="' + integrity + '"' : '') + (mjs ? ' type="module"' : '') + '></script>');
+																		}, null, this);
 																}, null, this);
 														}, null, this);
 												}, null, this);
